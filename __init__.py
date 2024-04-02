@@ -1,5 +1,5 @@
-from .task_producer import app as celery_app
-__all__ = ('celery_app',)
+#from .task_producer import app as celery_app
+#__all__ = ('celery_app',)
 
 # Start celery app
 # celery -A task_producer worker --loglevel=info

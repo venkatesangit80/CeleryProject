@@ -1,10 +1,11 @@
 import os
 from celery import Celery
+from time import sleep
 
 # Celery configuration
-app = Celery('CeleryProject', namespace='CELERY')
+app = Celery('task_producer', broker='redis://localhost:6379', backend='redis://localhost:6379')
 # app = Celery('CeleryProject', broker='pyamqp://guest@localhost//')
-app.config_from_object('celeryconfig')
+#app.config_from_object('celeryconfig')
 # Is celeryconfig a python file? If so, what is the content of the file?
 # The content of the file is:
 # task_serializer = 'json'
@@ -37,5 +38,8 @@ app.config_from_object('celeryconfig')
 # task_default_time_limit = None
 # task_default_soft_time_limit = None
 
-
-app.autodiscover_tasks()
+@app.task()
+def add(x, y):
+    print("Execution Started")
+    sleep(20)  # Simulate a long computation
+    return x + y
