@@ -4,8 +4,10 @@ from time import sleep
 
 # Celery configuration
 app = Celery('task_producer', broker='redis://localhost:6379', backend='redis://localhost:6379')
-# app = Celery('CeleryProject', broker='pyamqp://guest@localhost//')
+#app = Celery('task_producer')
 #app.config_from_object('celeryconfig')
+
+
 # Is celeryconfig a python file? If so, what is the content of the file?
 # The content of the file is:
 # task_serializer = 'json'
@@ -38,8 +40,26 @@ app = Celery('task_producer', broker='redis://localhost:6379', backend='redis://
 # task_default_time_limit = None
 # task_default_soft_time_limit = None
 
-@app.task()
+@app.task(name='add')
 def add(x, y):
     print("Execution Started")
     sleep(20)  # Simulate a long computation
     return x + y
+
+@app.task(name='subtract')
+def subtract(x, y):
+    print("Execution Started")
+    sleep(20)
+    return x - y
+
+@app.task(name='multiply')
+def multiply(x, y):
+    print("Execution Started")
+    sleep(20)
+    return x * y
+
+@app.task(name='divide')
+def divide(x, y):
+    print("Execution Started")
+    sleep(20)
+    return x / y
