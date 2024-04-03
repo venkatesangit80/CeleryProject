@@ -28,7 +28,7 @@ redis-server
 
 Then, start the Celery worker:
 ```bash
-celery -A tasks worker --loglevel=info
+celery -A task_producer worker --loglevel=info
 ```
 
 Finally, run the example script:
