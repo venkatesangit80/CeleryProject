@@ -1,4 +1,4 @@
-# Project Title
+# Celery POC Project
 
 Celery Project is a POC project to demonstrate how to use Celery with Python Script to create a simple task queue. Redis is used as the message broker and the result backend.
 
