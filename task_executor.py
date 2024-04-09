@@ -46,6 +46,60 @@ while not result3.ready():
 if result3.successful():
     print(result3.get())
 
+while not result4.ready():
+    sleep(1)
+
+if result4.successful():
+    print(result4.get())
+
+while not result5.ready():
+    sleep(1)
+
+if result5.successful():
+    print(result5.get())
+
+while not result5.ready():
+    sleep(1)
+
+if result6.successful():
+    print(result6.get())
+
+while not result6.ready():
+    sleep(1)
+
+if result7.successful():
+    print(result7.get())
+
+while not result8.ready():
+    sleep(1)
+
+if result8.successful():
+    print(result8.get())
+
+while not result9.ready():
+    sleep(1)
+
+if result9.successful():
+    print(result9.get())
+
+while not result10.ready():
+    sleep(1)
+
+if result10.successful():
+    print(result10.get())
+
+while not result11.ready():
+    sleep(1)
+
+if result11.successful():
+    print(result11.get())
+
+while not result12.ready():
+    sleep(1)
+
+if result12.successful():
+    print(result12.get())
+
 print("time " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 print("Parellel Execution Completed")
 print("Sequential Execution Started")
@@ -60,3 +114,7 @@ print(result5)
 
 print("time " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 print("Sequential Execution Completed")
+# Sequential Execution will take 1 minute for 3 adds, but parallel execution will take 40 seconds for 12 tasks with one worker and 20 seconds for 12 tasks with 2 workers.
+# Total 41 seconds for parellel execution of 12 tasks using 1 worker and sequential execution of 3 tasks took 1 min.
+# Now 2 workers  tasks got distributed and executed in 20 seconds.
+# Tasks got distributed to 2 workers and executed in 20 seconds.
