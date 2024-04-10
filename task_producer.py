@@ -40,25 +40,25 @@ app = Celery('task_producer', broker='redis://localhost:6379', backend='redis://
 # task_default_time_limit = None
 # task_default_soft_time_limit = None
 
-@app.task(name='add')
+@app.task(name='addition')
 def add(x, y):
     print("Execution Started")
     sleep(20)  # Simulate a long computation
     return x + y
 
-@app.task(name='subtract')
+@app.task(name='subtraction')
 def subtract(x, y):
     print("Execution Started")
     sleep(20)
     return x - y
 
-@app.task(name='multiply')
+@app.task(name='multiplication')
 def multiply(x, y):
     print("Execution Started")
     sleep(20)
     return x * y
 
-@app.task(name='divide')
+@app.task(name='division')
 def divide(x, y):
     print("Execution Started")
     sleep(20)
