@@ -3,7 +3,10 @@ from celery import Celery
 from time import sleep
 
 # Celery configuration
-app = Celery('task_producer', broker='redis://localhost:6379', backend='redis://localhost:6379')
+password = os.environ.get('password');
+host = os.environ.get('host');
+port=os.environ.get('port');
+app = Celery('task_producer', broker=f'redis://:{password}@{host}:{port}/0', backend=f'redis://:{password}@{host}:{port}/0')
 #app = Celery('task_producer')
 #app.config_from_object('celeryconfig')
 
