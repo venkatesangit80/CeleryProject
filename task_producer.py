@@ -10,7 +10,14 @@ app = Celery('task_producer',
              broker=f'redis://:{password}@{host}:{port}/0',
              backend=f'redis://:{password}@{host}:{port}/0')
 
-
+#Create a generic celery task to read the string method using exec and execute the method and return the result
+@app.task(name='process_data_from_source')
+def process_data_from_source(script_code, function_name, *args, **kwargs):
+    local_dict = {}
+    exec(script_code, globals(), local_dict)
+    func = local_dict.get(function_name)
+    if func:
+        return func(*args, **kwargs)
 @app.task(name='addition')
 def add(x, y):
     print("Execution Started")
