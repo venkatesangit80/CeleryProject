@@ -9,12 +9,16 @@ script_path_add = "add.py"
 script_path_subtract = "subtract.py"
 script_path_multiply = "multiply.py"
 script_path_divide = "divide.py"
+script_path_weather = "weatherretreiver.py"
 
 script_code_add = read_script(script_path_add)
 script_code_subtract = read_script(script_path_subtract)
 script_code_multiply = read_script(script_path_multiply)
 script_code_divide = read_script(script_path_divide)
+script_code_weather = read_script(script_path_weather)
 
+args = ()
+weatheresult = process_data_from_source.delay(script_code_weather, "get_weather", "Bangalore")
 result = process_data_from_source.delay(script_code_add, "add", 4, 4)
 result2 = process_data_from_source.delay(script_code_add, "add", 3, 4)
 result3 = process_data_from_source.delay(script_code_add, "add", 2, 4)
