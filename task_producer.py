@@ -23,7 +23,7 @@ def process_data_from_source(script_code, function_name, *args, **kwargs):
         result = func(*args, **kwargs)
         redis_key = f"{function_name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         redis_client.set(redis_key, result)
-        #redis_client.expire(redis_key, 3600)
+        redis_client.expire(redis_key, 3600)
         print(f"Result for {function_name} is {result}")
         return result
 @app.task(name='addition')
