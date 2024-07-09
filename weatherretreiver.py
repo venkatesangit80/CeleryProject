@@ -1,11 +1,10 @@
 import os
 
 
-def get_weather(city_name):
+def get_weather(city_name, config_details=None):
     import requests
     import json
-    import os
-    api_key = os.environ.get("weatherkey")  # Replace with your OpenWeatherMap API key
+    api_key = config_details["weatherkey"]  # Replace with your OpenWeatherMap API key
     base_url = 'http://api.openweathermap.org/data/2.5/weather?'
 
     # Complete url address

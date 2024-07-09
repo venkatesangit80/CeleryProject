@@ -3,11 +3,13 @@ from celery import Celery
 from time import sleep
 import redis
 from datetime import datetime
+from hashicorp_poc import get_config_details
 
 # Celery configuration
-password = os.environ.get('password')
-host = os.environ.get('host')
-port = os.environ.get('port')
+config_details = get_config_details()
+password = config_details['password']
+host = config_details['host']
+port = config_details['port']
 app = Celery('task_producer',
              broker=f'redis://:{password}@{host}:{port}/0',
              backend=f'redis://:{password}@{host}:{port}/0')
@@ -20,7 +22,7 @@ def process_data_from_source(script_code, function_name, *args, **kwargs):
     exec(script_code, globals(), local_dict)
     func = local_dict.get(function_name)
     if func:
-        result = func(*args, **kwargs)
+        result = func(*args, **kwargs, config_details=config_details)
         redis_key = f"{function_name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         redis_client.set(redis_key, result)
         redis_client.expire(redis_key, 3600)
