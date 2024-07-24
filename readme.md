@@ -1,1 +1,0 @@
-The goal of the Celery multi-process messaging platform is to streamline and enhance the performance monitoring process by providing a scalable, low-latency solution for extracting, storing, and accessing metrics, thereby improving operational efficiency and supporting timely issue resolution.
