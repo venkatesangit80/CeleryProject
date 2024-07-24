@@ -1,0 +1,1 @@
+The objective of the Celery multi-process messaging platform is to enable efficient, scalable, and real-time extraction and temporary storage of performance metrics from systems like VROPS, facilitating seamless data retrieval by Prometheus for enhanced monitoring and proactive system management.
