@@ -1,4 +1,4 @@
-from task_producer import add, subtract, multiply, divide, process_data_from_source
+from task_producer.tasks import process_data_from_source_normal as process_data_from_source
 from time import sleep
 from datetime import datetime
 from script_reader import read_script

@@ -15,6 +15,12 @@ def get_weather(city_name, config_details=None):
     response = requests.get(complete_url)
     print(2)
 
+    if response.status_code == 429:
+        raise Exception("Too Many Requests")
+
+    if response.status_code != 200:
+        raise Exception("Error in getting weather data")
+
     # Convert response to JSON format
     print(3)
     data = response.json()
