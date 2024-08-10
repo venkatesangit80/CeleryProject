@@ -31,4 +31,4 @@ task_default_queue = 'default'
 task_default_exchange = 'default'
 task_default_routing_key = 'default'
 task_acks_late = True
-worker_prefetch_multiplier = 4
+worker_concurrency = 4
