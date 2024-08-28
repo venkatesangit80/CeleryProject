@@ -1,0 +1,177 @@
+import unittest
+from unittest.mock import patch, MagicMock, call
+from task_producer import task_procedure
+
+class TestTaskProducer(unittest.TestCase):
+
+    @patch('task_producer.task_procedure.redis.Redis')
+    def setUp(self, MockRedis):
+        # Mocking Redis connection
+        self.mock_redis = MockRedis.return_value
+        self.mock_redis.get.return_value = 'mocked_value'
+
+    @patch('task_producer.task_procedure.custom_access_token_task')
+    def test_process_data(self, MockTokenTask):
+        # Sample params to pass to the function
+        params = ['mock_script_code', 'mock_function_name', 'mock_start_time', 'mock_token', 'mock_vrops_key']
+
+        # Mocking execution
+        local_dict = {}
+        with patch('builtins.exec') as mock_exec:
+            task_procedure.process_data(params)
+            mock_exec.assert_called_once_with('mock_script_code', globals(), local_dict)
+
+        # Check if Redis set method was called with correct parameters
+        self.mock_redis.set.assert_called_once_with('mock_function_name_mock_start_time', 'mocked_value')
+        self.mock_redis.expire.assert_called_once_with('mock_function_name_mock_start_time', 120)
+
+    @patch('task_producer.task_procedure.get_key_based_custom_access_token')
+    def test_process_data_from_source_high_priority(self, MockGetToken):
+        # Mocking the access token
+        MockGetToken.return_value = 'mock_access_token'
+
+        input_params = {
+            'execution_methods': ['mock_method'],
+            'vrops_key': 'mock_vrops_key',
+            'execution_code': 'mock_code',
+            'starting_time': 'mock_time'
+        }
+
+        task = task_procedure.process_data_from_source_high_priority
+        with patch.object(task_procedure, 'process_data', return_value='success') as mock_process_data:
+            task(input_params=input_params)
+
+            mock_process_data.assert_called_once_with(
+                ['mock_code', 'mock_method', 'mock_time', 'mock_access_token', 'mock_vrops_key'],
+                vrops_key=input_params['vrops_key']
+            )
+
+    @patch('task_producer.task_procedure.get_key_based_custom_access_token')
+    def test_process_data_from_source_low_priority(self, MockGetToken):
+        MockGetToken.return_value = 'mock_access_token'
+
+        input_params = {
+            'execution_methods': ['mock_method'],
+            'vrops_key': 'mock_vrops_key',
+            'execution_code': 'mock_code',
+            'starting_time': 'mock_time'
+        }
+
+        task = task_procedure.process_data_from_source_low_priority
+        with patch.object(task_procedure, 'process_data', return_value='success') as mock_process_data:
+            task(input_params=input_params)
+
+            mock_process_data.assert_called_once_with(
+                ['mock_code', 'mock_method', 'mock_time', 'mock_access_token', 'mock_vrops_key'],
+                vrops_key=input_params['vrops_key']
+            )
+
+    @patch('task_producer.task_procedure.get_key_based_custom_access_token')
+    def test_process_data_from_source_default(self, MockGetToken):
+        MockGetToken.return_value = 'mock_access_token'
+
+        input_params = {
+            'execution_methods': ['mock_method'],
+            'vrops_key': 'mock_vrops_key',
+            'execution_code': 'mock_code',
+            'starting_time': 'mock_time'
+        }
+
+        task = task_procedure.process_data_from_source_default
+        with patch.object(task_procedure, 'process_data', return_value='success') as mock_process_data:
+            task(input_params=input_params)
+
+            mock_process_data.assert_called_once_with(
+                ['mock_code', 'mock_method', 'mock_time', 'mock_access_token', 'mock_vrops_key'],
+                vrops_key=input_params['vrops_key']
+            )
+
+if __name__ == '__main__':
+    unittest.main()
+
+
+
+import unittest
+from unittest.mock import patch, MagicMock
+from vm_celery_exen import (
+    get_auth_token,
+    fetch_data_from_vrops,
+    fetch_ClusterComputeResource_resource_kind_count,
+    fetch_virtual_machine_resource_kinds_celery,
+    execute
+)
+
+
+class TestVmCeleryExen(unittest.TestCase):
+
+    @patch('vm_celery_exen.requests.post')
+    def test_get_auth_token(self, mock_post):
+        # Setup mock response
+        mock_response = MagicMock()
+        mock_response.json.return_value = {'token': 'mocked_token'}
+        mock_post.return_value = mock_response
+
+        # Call function
+        auth_token = get_auth_token('mock_vrops_key')
+
+        # Assert the function returns the mocked token
+        self.assertEqual(auth_token, 'mocked_token')
+        mock_post.assert_called_once()
+
+    @patch('vm_celery_exen.requests.get')
+    def test_fetch_data_from_vrops(self, mock_get):
+        # Setup mock response
+        mock_response = MagicMock()
+        mock_response.json.return_value = {'data': 'mocked_data'}
+        mock_get.return_value = mock_response
+
+        # Call function
+        data = fetch_data_from_vrops('mock_url', {'param': 'value'}, 'mock_token')
+
+        # Assert the function returns the mocked data
+        self.assertEqual(data, {'data': 'mocked_data'})
+        mock_get.assert_called_once()
+
+    @patch('vm_celery_exen.fetch_data_from_vrops')
+    @patch('vm_celery_exen.json.loads')
+    def test_fetch_ClusterComputeResource_resource_kind_count(self, mock_json_loads, mock_fetch_data):
+        # Setup mocks
+        mock_json_loads.return_value = {'vrops_url': 'mock_vrops_url'}
+        mock_fetch_data.return_value = {'totalCount': 100}
+
+        # Call function
+        total_count = fetch_ClusterComputeResource_resource_kind_count('mock_token', 'mock_vrops_key')
+
+        # Assert the function returns the mocked total count
+        self.assertEqual(total_count, 100)
+        mock_fetch_data.assert_called_once()
+
+    @patch('vm_celery_exen.execute_vm_task')
+    def test_fetch_virtual_machine_resource_kinds_celery(self, mock_execute_vm_task):
+        # Call function
+        fetch_virtual_machine_resource_kinds_celery(250, 'mock_vrops_key')
+
+        # Assert the function called execute_vm_task the correct number of times
+        self.assertEqual(mock_execute_vm_task.call_count, 3)
+
+    @patch('vm_celery_exen.fetch_ClusterComputeResource_resource_kind_count')
+    @patch('vm_celery_exen.fetch_virtual_machine_resource_kinds_celery')
+    @patch('vm_celery_exen.get_auth_token')
+    @patch('vm_celery_exen.BackgroundScheduler')
+    def test_execute(self, mock_scheduler, mock_get_auth_token, mock_fetch_vm_kinds, mock_fetch_resource_kind_count):
+        # Setup mocks
+        mock_get_auth_token.return_value = 'mocked_token'
+        mock_fetch_resource_kind_count.return_value = 250
+
+        # Call function
+        execute('mock_vrops_key')
+
+        # Assert all functions were called correctly
+        mock_get_auth_token.assert_called_once_with('mock_vrops_key')
+        mock_fetch_resource_kind_count.assert_called_once_with('mocked_token', 'mock_vrops_key')
+        mock_fetch_vm_kinds.assert_called_once_with(250, 'mock_vrops_key')
+        mock_scheduler.return_value.start.assert_called_once()
+
+
+if __name__ == '__main__':
+    unittest.main()
