@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/
 
-ENV hcp_client_id=
-ENV hcp_secret=
+ENV hcp_value=
+ENV hcp_id=
 
 CMD ["celery", "-A", "task_producer.tasks", "worker", "--loglevel=info", "-n", "worker1", "--concurrency=4"]
