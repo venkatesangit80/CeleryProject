@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  labels:
+    app: celery
+spec:
+  replicas: 2  # Corresponds to instances in TAS
+  selector:
+    matchLabels:
+      app: celery
+  template:
+    metadata:
+      labels:
+        app: celery
+    spec:
+      containers:
+      - name: celery
+        image: your-docker-image
+        command: ["celery"]
+        args: ["-A", "task_producer.tasks", "worker", "--loglevel=info", "-n", "worker1", "--concurrency=4"]
+        env:
+        - name: hcp_client_id
+          value: "o4LHqADty1XZVANtTaHLxcxjCQrlha9Y"
+        - name: hcp_secret
+          value: "XqRJDnfJz2cpEK6lbveYwiNhYKWQgZ_tVyT4yuDFikNAUMHMoQcz11bkHgqYKB99"
+        resources:
+          limits:
+            memory: "1Gi"
