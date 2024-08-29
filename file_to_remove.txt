@@ -175,3 +175,67 @@ class TestVmCeleryExen(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+import pandas as pd
+
+def derive_and_filter_patterns(df, column, low_threshold, high_threshold):
+    """
+    Derives low, medium, and high patterns from the data and filters out patterns 
+    that are present in the 60-day period but absent in the first 30-day period.
+
+    Args:
+    df (pd.DataFrame): The input dataframe with 'datetime', 'cpu', and 'mem' columns.
+    column (str): The column to analyze ('cpu' or 'mem').
+    low_threshold (float): The threshold for categorizing low utilization.
+    high_threshold (float): The threshold for categorizing high utilization.
+
+    Returns:
+    pd.DataFrame: A dataframe with distant patterns filtered out.
+    """
+
+    # Ensure the 'datetime' column is in datetime format
+    df['datetime'] = pd.to_datetime(df['datetime'])
+    
+    # Sort the DataFrame by 'datetime'
+    df = df.sort_values(by='datetime')
+
+    # Categorize the data into low, medium, and high patterns
+    conditions = [
+        (df[column] < low_threshold),
+        (df[column] >= low_threshold) & (df[column] <= high_threshold),
+        (df[column] > high_threshold)
+    ]
+    choices = ['low', 'medium', 'high']
+    df['pattern'] = pd.cut(df[column], bins=[-float('inf'), low_threshold, high_threshold, float('inf')],
+                           labels=choices)
+
+    # Split the data into the first 30 days and the next 60 days
+    first_30_days_cutoff = df['datetime'].min() + pd.Timedelta(days=30)
+    first_30_days_df = df[df['datetime'] <= first_30_days_cutoff]
+    
+    next_60_days_cutoff = df['datetime'].max() - pd.Timedelta(days=30)
+    next_60_days_df = df[(df['datetime'] > first_30_days_cutoff) & (df['datetime'] <= next_60_days_cutoff)]
+
+    # Find unique patterns in the first 30 days
+    unique_first_30_days_patterns = first_30_days_df['pattern'].unique()
+
+    # Filter out patterns in the next 60 days that are not in the first 30 days
+    filtered_next_60_days_df = next_60_days_df[next_60_days_df['pattern'].isin(unique_first_30_days_patterns)]
+
+    # Combine the filtered next 60 days data with the original first 30 days data
+    result_df = pd.concat([first_30_days_df, filtered_next_60_days_df]).sort_values(by='datetime')
+
+    return result_df
+
+# Example usage
+# df is your DataFrame with 'datetime', 'cpu', and 'mem' columns
+low_threshold = 20  # example threshold for low utilization
+high_threshold = 80  # example threshold for high utilization
+filtered_cpu_df = derive_and_filter_patterns(df, 'cpu', low_threshold, high_threshold)
+filtered_mem_df = derive_and_filter_patterns(df, 'mem', low_threshold, high_threshold)
+
+import ace_tools as tools; tools.display_dataframe_to_user(name="Filtered CPU Data", dataframe=filtered_cpu_df)
+tools.display_dataframe_to_user(name="Filtered Memory Data", dataframe=filtered_mem_df)
