@@ -20,9 +20,9 @@ spec:
         command: ["celery"]
         args: ["-A", "task_producer.tasks", "worker", "--loglevel=info", "-n", "worker1", "--concurrency=4"]
         env:
-        - name: hcp_client_id
+        - name: hcp_id
           value: ""
-        - name: hcp_secret
+        - name: hcp_value
           value: ""
         resources:
           limits:
