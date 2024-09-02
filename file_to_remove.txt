@@ -1,241 +1,81 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
-from task_producer import task_procedure
-
-class TestTaskProducer(unittest.TestCase):
-
-    @patch('task_producer.task_procedure.redis.Redis')
-    def setUp(self, MockRedis):
-        # Mocking Redis connection
-        self.mock_redis = MockRedis.return_value
-        self.mock_redis.get.return_value = 'mocked_value'
-
-    @patch('task_producer.task_procedure.custom_access_token_task')
-    def test_process_data(self, MockTokenTask):
-        # Sample params to pass to the function
-        params = ['mock_script_code', 'mock_function_name', 'mock_start_time', 'mock_token', 'mock_vrops_key']
-
-        # Mocking execution
-        local_dict = {}
-        with patch('builtins.exec') as mock_exec:
-            task_procedure.process_data(params)
-            mock_exec.assert_called_once_with('mock_script_code', globals(), local_dict)
-
-        # Check if Redis set method was called with correct parameters
-        self.mock_redis.set.assert_called_once_with('mock_function_name_mock_start_time', 'mocked_value')
-        self.mock_redis.expire.assert_called_once_with('mock_function_name_mock_start_time', 120)
-
-    @patch('task_producer.task_procedure.get_key_based_custom_access_token')
-    def test_process_data_from_source_high_priority(self, MockGetToken):
-        # Mocking the access token
-        MockGetToken.return_value = 'mock_access_token'
-
-        input_params = {
-            'execution_methods': ['mock_method'],
-            'vrops_key': 'mock_vrops_key',
-            'execution_code': 'mock_code',
-            'starting_time': 'mock_time'
-        }
-
-        task = task_procedure.process_data_from_source_high_priority
-        with patch.object(task_procedure, 'process_data', return_value='success') as mock_process_data:
-            task(input_params=input_params)
-
-            mock_process_data.assert_called_once_with(
-                ['mock_code', 'mock_method', 'mock_time', 'mock_access_token', 'mock_vrops_key'],
-                vrops_key=input_params['vrops_key']
-            )
-
-    @patch('task_producer.task_procedure.get_key_based_custom_access_token')
-    def test_process_data_from_source_low_priority(self, MockGetToken):
-        MockGetToken.return_value = 'mock_access_token'
-
-        input_params = {
-            'execution_methods': ['mock_method'],
-            'vrops_key': 'mock_vrops_key',
-            'execution_code': 'mock_code',
-            'starting_time': 'mock_time'
-        }
-
-        task = task_procedure.process_data_from_source_low_priority
-        with patch.object(task_procedure, 'process_data', return_value='success') as mock_process_data:
-            task(input_params=input_params)
-
-            mock_process_data.assert_called_once_with(
-                ['mock_code', 'mock_method', 'mock_time', 'mock_access_token', 'mock_vrops_key'],
-                vrops_key=input_params['vrops_key']
-            )
-
-    @patch('task_producer.task_procedure.get_key_based_custom_access_token')
-    def test_process_data_from_source_default(self, MockGetToken):
-        MockGetToken.return_value = 'mock_access_token'
-
-        input_params = {
-            'execution_methods': ['mock_method'],
-            'vrops_key': 'mock_vrops_key',
-            'execution_code': 'mock_code',
-            'starting_time': 'mock_time'
-        }
-
-        task = task_procedure.process_data_from_source_default
-        with patch.object(task_procedure, 'process_data', return_value='success') as mock_process_data:
-            task(input_params=input_params)
-
-            mock_process_data.assert_called_once_with(
-                ['mock_code', 'mock_method', 'mock_time', 'mock_access_token', 'mock_vrops_key'],
-                vrops_key=input_params['vrops_key']
-            )
-
-if __name__ == '__main__':
-    unittest.main()
-
-
-
-import unittest
 from unittest.mock import patch, MagicMock
-from vm_celery_exen import (
-    get_auth_token,
-    fetch_data_from_vrops,
-    fetch_ClusterComputeResource_resource_kind_count,
-    fetch_virtual_machine_resource_kinds_celery,
-    execute
-)
+from celery_exen import get_auth_token, fetch_data_from_vrops, fetch_resource_kind_count, fetch_resource_kinds_celery, execute, execute_data
 
+class TestCeleryExen(unittest.TestCase):
 
-class TestVmCeleryExen(unittest.TestCase):
-
-    @patch('vm_celery_exen.requests.post')
+    @patch('celery_exen.requests.post')
     def test_get_auth_token(self, mock_post):
-        # Setup mock response
+        # Mock the response from the auth token endpoint
         mock_response = MagicMock()
-        mock_response.json.return_value = {'token': 'mocked_token'}
+        mock_response.json.return_value = {'token': 'fake-token'}
         mock_post.return_value = mock_response
 
-        # Call function
-        auth_token = get_auth_token('mock_vrops_key')
+        # Test the function
+        token = get_auth_token()
+        self.assertEqual(token, 'fake-token')
 
-        # Assert the function returns the mocked token
-        self.assertEqual(auth_token, 'mocked_token')
-        mock_post.assert_called_once()
-
-    @patch('vm_celery_exen.requests.get')
+    @patch('celery_exen.requests.get')
     def test_fetch_data_from_vrops(self, mock_get):
-        # Setup mock response
+        # Mock the response from the vROps endpoint
         mock_response = MagicMock()
-        mock_response.json.return_value = {'data': 'mocked_data'}
+        mock_response.json.return_value = {'data': 'fake-data'}
         mock_get.return_value = mock_response
 
-        # Call function
-        data = fetch_data_from_vrops('mock_url', {'param': 'value'}, 'mock_token')
+        url = "http://fakeurl"
+        params = {}
+        auth_token = "fake-token"
 
-        # Assert the function returns the mocked data
-        self.assertEqual(data, {'data': 'mocked_data'})
-        mock_get.assert_called_once()
+        # Test the function
+        data = fetch_data_from_vrops(url, params, auth_token)
+        self.assertEqual(data, {'data': 'fake-data'})
 
-    @patch('vm_celery_exen.fetch_data_from_vrops')
-    @patch('vm_celery_exen.json.loads')
-    def test_fetch_ClusterComputeResource_resource_kind_count(self, mock_json_loads, mock_fetch_data):
-        # Setup mocks
-        mock_json_loads.return_value = {'vrops_url': 'mock_vrops_url'}
-        mock_fetch_data.return_value = {'totalCount': 100}
+    @patch('celery_exen.fetch_data_from_vrops')
+    def test_fetch_resource_kind_count(self, mock_fetch_data_from_vrops):
+        # Mock the response from the fetch_data_from_vrops
+        mock_fetch_data_from_vrops.return_value = {'pageInfo': {'totalCount': 10}}
 
-        # Call function
-        total_count = fetch_ClusterComputeResource_resource_kind_count('mock_token', 'mock_vrops_key')
+        auth_token = "fake-token"
+        resource_kind_key = "VirtualMachine"
 
-        # Assert the function returns the mocked total count
-        self.assertEqual(total_count, 100)
-        mock_fetch_data.assert_called_once()
+        # Test the function
+        count = fetch_resource_kind_count(auth_token, resource_kind_key)
+        self.assertEqual(count, 10)
 
-    @patch('vm_celery_exen.execute_vm_task')
-    def test_fetch_virtual_machine_resource_kinds_celery(self, mock_execute_vm_task):
-        # Call function
-        fetch_virtual_machine_resource_kinds_celery(250, 'mock_vrops_key')
+    @patch('celery_exen.task_vm_resourcekinds.delay')
+    @patch('celery_exen.task_hs_resourcekinds.delay')
+    @patch('celery_exen.task_ds_resourcekinds.delay')
+    @patch('celery_exen.task_ccr_resourcekinds.delay')
+    def test_fetch_resource_kinds_celery(self, mock_vm_delay, mock_hs_delay, mock_ds_delay, mock_ccr_delay):
+        # Test the fetch_resource_kinds_celery function for different labels
+        total_count = 200
+        vrops_key_val = "fake-key"
+        label = "Virtual_Machine"
 
-        # Assert the function called execute_vm_task the correct number of times
-        self.assertEqual(mock_execute_vm_task.call_count, 3)
+        fetch_resource_kinds_celery(total_count, vrops_key_val, label)
+        mock_vm_delay.assert_called_once()
 
-    @patch('vm_celery_exen.fetch_ClusterComputeResource_resource_kind_count')
-    @patch('vm_celery_exen.fetch_virtual_machine_resource_kinds_celery')
-    @patch('vm_celery_exen.get_auth_token')
-    @patch('vm_celery_exen.BackgroundScheduler')
-    def test_execute(self, mock_scheduler, mock_get_auth_token, mock_fetch_vm_kinds, mock_fetch_resource_kind_count):
-        # Setup mocks
-        mock_get_auth_token.return_value = 'mocked_token'
-        mock_fetch_resource_kind_count.return_value = 250
+        label = "Host_System"
+        fetch_resource_kinds_celery(total_count, vrops_key_val, label)
+        mock_hs_delay.assert_called_once()
 
-        # Call function
-        execute('mock_vrops_key')
+    @patch('celery_exen.get_auth_token')
+    @patch('celery_exen.fetch_resource_kind_count')
+    @patch('celery_exen.fetch_resource_kinds_celery')
+    def test_execute(self, mock_fetch_resource_kinds_celery, mock_fetch_resource_kind_count, mock_get_auth_token):
+        # Mock responses
+        mock_get_auth_token.return_value = 'fake-token'
+        mock_fetch_resource_kind_count.return_value = 10
 
-        # Assert all functions were called correctly
-        mock_get_auth_token.assert_called_once_with('mock_vrops_key')
-        mock_fetch_resource_kind_count.assert_called_once_with('mocked_token', 'mock_vrops_key')
-        mock_fetch_vm_kinds.assert_called_once_with(250, 'mock_vrops_key')
-        mock_scheduler.return_value.start.assert_called_once()
+        # Test execute function
+        execute('fake-key')
+        self.assertTrue(mock_fetch_resource_kinds_celery.called)
+        self.assertTrue(mock_fetch_resource_kind_count.called)
 
-
-if __name__ == '__main__':
-    unittest.main()
-
-
-
-
-import pandas as pd
-
-def derive_and_filter_patterns(df, column, low_threshold, high_threshold):
-    """
-    Derives low, medium, and high patterns from the data and filters out patterns 
-    that are present in the 60-day period but absent in the first 30-day period.
-
-    Args:
-    df (pd.DataFrame): The input dataframe with 'datetime', 'cpu', and 'mem' columns.
-    column (str): The column to analyze ('cpu' or 'mem').
-    low_threshold (float): The threshold for categorizing low utilization.
-    high_threshold (float): The threshold for categorizing high utilization.
-
-    Returns:
-    pd.DataFrame: A dataframe with distant patterns filtered out.
-    """
-
-    # Ensure the 'datetime' column is in datetime format
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    
-    # Sort the DataFrame by 'datetime'
-    df = df.sort_values(by='datetime')
-
-    # Categorize the data into low, medium, and high patterns
-    conditions = [
-        (df[column] < low_threshold),
-        (df[column] >= low_threshold) & (df[column] <= high_threshold),
-        (df[column] > high_threshold)
-    ]
-    choices = ['low', 'medium', 'high']
-    df['pattern'] = pd.cut(df[column], bins=[-float('inf'), low_threshold, high_threshold, float('inf')],
-                           labels=choices)
-
-    # Split the data into the first 30 days and the next 60 days
-    first_30_days_cutoff = df['datetime'].min() + pd.Timedelta(days=30)
-    first_30_days_df = df[df['datetime'] <= first_30_days_cutoff]
-    
-    next_60_days_cutoff = df['datetime'].max() - pd.Timedelta(days=30)
-    next_60_days_df = df[(df['datetime'] > first_30_days_cutoff) & (df['datetime'] <= next_60_days_cutoff)]
-
-    # Find unique patterns in the first 30 days
-    unique_first_30_days_patterns = first_30_days_df['pattern'].unique()
-
-    # Filter out patterns in the next 60 days that are not in the first 30 days
-    filtered_next_60_days_df = next_60_days_df[next_60_days_df['pattern'].isin(unique_first_30_days_patterns)]
-
-    # Combine the filtered next 60 days data with the original first 30 days data
-    result_df = pd.concat([first_30_days_df, filtered_next_60_days_df]).sort_values(by='datetime')
-
-    return result_df
-
-# Example usage
-# df is your DataFrame with 'datetime', 'cpu', and 'mem' columns
-low_threshold = 20  # example threshold for low utilization
-high_threshold = 80  # example threshold for high utilization
-filtered_cpu_df = derive_and_filter_patterns(df, 'cpu', low_threshold, high_threshold)
-filtered_mem_df = derive_and_filter_patterns(df, 'mem', low_threshold, high_threshold)
-
-import ace_tools as tools; tools.display_dataframe_to_user(name="Filtered CPU Data", dataframe=filtered_cpu_df)
-tools.display_dataframe_to_user(name="Filtered Memory Data", dataframe=filtered_mem_df)
+    @patch('celery_exen.execute')
+    @patch('celery_exen.BackgroundScheduler')
+    def test_execute_data(self, mock_scheduler, mock_execute):
+        scheduler_instance = mock_scheduler.return_value
+        execute_data()
+        self.assertTrue(scheduler_instance.start.called)
+        self.assertTrue(mock_execute.called)
