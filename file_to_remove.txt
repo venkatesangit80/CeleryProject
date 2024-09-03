@@ -1,81 +1,42 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from celery_exen import get_auth_token, fetch_data_from_vrops, fetch_resource_kind_count, fetch_resource_kinds_celery, execute, execute_data
+from app_module import app
 
-class TestCeleryExen(unittest.TestCase):
+class TestFlaskApp(unittest.TestCase):
 
-    @patch('celery_exen.requests.post')
-    def test_get_auth_token(self, mock_post):
-        # Mock the response from the auth token endpoint
-        mock_response = MagicMock()
-        mock_response.json.return_value = {'token': 'fake-token'}
-        mock_post.return_value = mock_response
+    @patch('app_module.request')
+    def test_greet(self, mock_request):
+        mock_request.args = {'name': 'John'}
+        with app.test_client() as client:
+            response = client.get('/greet')
+            json_data = response.get_json()
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(json_data['message'], 'Hello, John!')
 
-        # Test the function
-        token = get_auth_token()
-        self.assertEqual(token, 'fake-token')
+    @patch('app_module.render_template')
+    def test_home(self, mock_render_template):
+        mock_render_template.return_value = 'mocked_template'
+        with app.test_client() as client:
+            response = client.get('/home')
+            mock_render_template.assert_called_once_with('home.html', title='Home')
+            self.assertEqual(response.data.decode(), 'mocked_template')
 
-    @patch('celery_exen.requests.get')
-    def test_fetch_data_from_vrops(self, mock_get):
-        # Mock the response from the vROps endpoint
-        mock_response = MagicMock()
-        mock_response.json.return_value = {'data': 'fake-data'}
-        mock_get.return_value = mock_response
+    @patch('app_module.session')
+    def test_get_session(self, mock_session):
+        mock_session.get.return_value = 'mocked_data'
+        with app.test_client() as client:
+            response = client.get('/get-session')
+            json_data = response.get_json()
+            self.assertEqual(json_data['session_data'], 'mocked_data')
 
-        url = "http://fakeurl"
-        params = {}
-        auth_token = "fake-token"
+    @patch('app_module.url_for')
+    def test_redirect_home(self, mock_url_for):
+        mock_url_for.return_value = '/mocked_home'
+        with app.test_client() as client:
+            response = client.get('/redirect-home')
+            mock_url_for.assert_called_once_with('home')
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.location, 'http://localhost/mocked_home')
 
-        # Test the function
-        data = fetch_data_from_vrops(url, params, auth_token)
-        self.assertEqual(data, {'data': 'fake-data'})
-
-    @patch('celery_exen.fetch_data_from_vrops')
-    def test_fetch_resource_kind_count(self, mock_fetch_data_from_vrops):
-        # Mock the response from the fetch_data_from_vrops
-        mock_fetch_data_from_vrops.return_value = {'pageInfo': {'totalCount': 10}}
-
-        auth_token = "fake-token"
-        resource_kind_key = "VirtualMachine"
-
-        # Test the function
-        count = fetch_resource_kind_count(auth_token, resource_kind_key)
-        self.assertEqual(count, 10)
-
-    @patch('celery_exen.task_vm_resourcekinds.delay')
-    @patch('celery_exen.task_hs_resourcekinds.delay')
-    @patch('celery_exen.task_ds_resourcekinds.delay')
-    @patch('celery_exen.task_ccr_resourcekinds.delay')
-    def test_fetch_resource_kinds_celery(self, mock_vm_delay, mock_hs_delay, mock_ds_delay, mock_ccr_delay):
-        # Test the fetch_resource_kinds_celery function for different labels
-        total_count = 200
-        vrops_key_val = "fake-key"
-        label = "Virtual_Machine"
-
-        fetch_resource_kinds_celery(total_count, vrops_key_val, label)
-        mock_vm_delay.assert_called_once()
-
-        label = "Host_System"
-        fetch_resource_kinds_celery(total_count, vrops_key_val, label)
-        mock_hs_delay.assert_called_once()
-
-    @patch('celery_exen.get_auth_token')
-    @patch('celery_exen.fetch_resource_kind_count')
-    @patch('celery_exen.fetch_resource_kinds_celery')
-    def test_execute(self, mock_fetch_resource_kinds_celery, mock_fetch_resource_kind_count, mock_get_auth_token):
-        # Mock responses
-        mock_get_auth_token.return_value = 'fake-token'
-        mock_fetch_resource_kind_count.return_value = 10
-
-        # Test execute function
-        execute('fake-key')
-        self.assertTrue(mock_fetch_resource_kinds_celery.called)
-        self.assertTrue(mock_fetch_resource_kind_count.called)
-
-    @patch('celery_exen.execute')
-    @patch('celery_exen.BackgroundScheduler')
-    def test_execute_data(self, mock_scheduler, mock_execute):
-        scheduler_instance = mock_scheduler.return_value
-        execute_data()
-        self.assertTrue(scheduler_instance.start.called)
-        self.assertTrue(mock_execute.called)
+if __name__ == '__main__':
+    unittest.main()
