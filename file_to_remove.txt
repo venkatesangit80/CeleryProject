@@ -1,33 +1,35 @@
-import time
-from functools import lru_cache
-from datetime import datetime, timedelta
+from celery import Celery
+from celery.result import AsyncResult
 
-def timed_lru_cache(seconds: int, maxsize: int = 128):
-    def wrapper_cache(func):
-        func = lru_cache(maxsize=maxsize)(func)
-        func.lifetime = timedelta(seconds=seconds)
-        func.expiration = datetime.now() + func.lifetime
+# Initialize your Celery app
+app = Celery('your_app_name', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
 
-        def wrapped_func(*args, **kwargs):
-            if datetime.now() >= func.expiration:
-                func.cache_clear()  # Clear the cache
-                func.expiration = datetime.now() + func.lifetime
-            return func(*args, **kwargs)
+# Function to get failed tasks from the backend
+def get_failed_tasks():
+    # This function should query your backend for tasks in FAILURE state.
+    # Here is a simplistic example assuming you're using Redis as the backend.
+    failed_tasks = []
+    
+    # Example: assuming Redis stores task ids with a key pattern like 'celery-task-meta-*'
+    import redis
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    
+    for key in r.scan_iter("celery-task-meta-*"):
+        task_id = key.decode("utf-8").split('celery-task-meta-')[1]
+        task_result = AsyncResult(task_id)
+        
+        if task_result.state == 'FAILURE':
+            failed_tasks.append(task_result)
+    
+    return failed_tasks
 
-        wrapped_func.cache_info = func.cache_info
-        wrapped_func.cache_clear = func.cache_clear
-        return wrapped_func
+# Function to retry failed tasks
+def retry_failed_tasks(failed_tasks):
+    for task_result in failed_tasks:
+        print(f"Retrying task {task_result.id}...")
+        # Use retry method if available, or reapply the task
+        task_result.retry(exc=None, throw=False)
 
-    return wrapper_cache
-
-@timed_lru_cache(seconds=1800)  # Cache for 30 minutes (1800 seconds)
-def get_data_from_source():
-    print("Fetching data from source...")
-    return {"data": "sample data"}
-
-# Usage example
-print(get_data_from_source())  # Fetches from source
-time.sleep(5)
-print(get_data_from_source())  # Returns cached result
-time.sleep(1800)
-print(get_data_from_source())  # Cache expired, fetches from source again
+# Usage
+failed_tasks = get_failed_tasks()
+retry_failed_tasks(failed_tasks)
