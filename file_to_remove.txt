@@ -1,42 +1,33 @@
-import unittest
-from unittest.mock import patch, MagicMock
-from app_module import app
+import time
+from functools import lru_cache
+from datetime import datetime, timedelta
 
-class TestFlaskApp(unittest.TestCase):
+def timed_lru_cache(seconds: int, maxsize: int = 128):
+    def wrapper_cache(func):
+        func = lru_cache(maxsize=maxsize)(func)
+        func.lifetime = timedelta(seconds=seconds)
+        func.expiration = datetime.now() + func.lifetime
 
-    @patch('app_module.request')
-    def test_greet(self, mock_request):
-        mock_request.args = {'name': 'John'}
-        with app.test_client() as client:
-            response = client.get('/greet')
-            json_data = response.get_json()
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(json_data['message'], 'Hello, John!')
+        def wrapped_func(*args, **kwargs):
+            if datetime.now() >= func.expiration:
+                func.cache_clear()  # Clear the cache
+                func.expiration = datetime.now() + func.lifetime
+            return func(*args, **kwargs)
 
-    @patch('app_module.render_template')
-    def test_home(self, mock_render_template):
-        mock_render_template.return_value = 'mocked_template'
-        with app.test_client() as client:
-            response = client.get('/home')
-            mock_render_template.assert_called_once_with('home.html', title='Home')
-            self.assertEqual(response.data.decode(), 'mocked_template')
+        wrapped_func.cache_info = func.cache_info
+        wrapped_func.cache_clear = func.cache_clear
+        return wrapped_func
 
-    @patch('app_module.session')
-    def test_get_session(self, mock_session):
-        mock_session.get.return_value = 'mocked_data'
-        with app.test_client() as client:
-            response = client.get('/get-session')
-            json_data = response.get_json()
-            self.assertEqual(json_data['session_data'], 'mocked_data')
+    return wrapper_cache
 
-    @patch('app_module.url_for')
-    def test_redirect_home(self, mock_url_for):
-        mock_url_for.return_value = '/mocked_home'
-        with app.test_client() as client:
-            response = client.get('/redirect-home')
-            mock_url_for.assert_called_once_with('home')
-            self.assertEqual(response.status_code, 302)
-            self.assertEqual(response.location, 'http://localhost/mocked_home')
+@timed_lru_cache(seconds=1800)  # Cache for 30 minutes (1800 seconds)
+def get_data_from_source():
+    print("Fetching data from source...")
+    return {"data": "sample data"}
 
-if __name__ == '__main__':
-    unittest.main()
+# Usage example
+print(get_data_from_source())  # Fetches from source
+time.sleep(5)
+print(get_data_from_source())  # Returns cached result
+time.sleep(1800)
+print(get_data_from_source())  # Cache expired, fetches from source again
