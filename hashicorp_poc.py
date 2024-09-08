@@ -2,6 +2,14 @@ import requests
 import json
 import os
 
+def get_normal_config():
+    return {
+        'password': os.environ.get('password'),
+        'host': os.environ.get('host'),
+        'port': os.environ.get('port'),
+        'weatherkey': os.environ.get('weatherkey')
+    }
+
 def get_config_details():
     # Replace these with your actual HCP Client ID and Secret
     HCP_CLIENT_ID = os.environ.get('hcp_client_id')

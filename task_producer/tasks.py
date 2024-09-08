@@ -1,10 +1,9 @@
-import os
 from celery import Celery
 from time import sleep
 import time
 import redis
 from datetime import datetime
-from hashicorp_poc import get_config_details
+from hashicorp_poc import get_normal_config as get_config_details
 
 # Celery configuration
 config_details = get_config_details()

@@ -16,14 +16,14 @@ spec:
     spec:
       containers:
       - name: celery
-        image: your-docker-image
+        image: venkeydocker/your-docker-image-name:latest
         command: ["celery"]
         args: ["-A", "task_producer.tasks", "worker", "--loglevel=info", "-n", "worker1", "--concurrency=4"]
         env:
         - name: hcp_client_id
-          value: ""
+          value: "o4LHqADty1XZVANtTaHLxcxjCQrlha9Y"
         - name: hcp_secret
-          value: ""
+          value: "XqRJDnfJz2cpEK6lbveYwiNhYKWQgZ_tVyT4yuDFikNAUMHMoQcz11bkHgqYKB99"
         resources:
           limits:
             memory: "1Gi"
