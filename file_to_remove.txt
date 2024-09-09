@@ -1,35 +1,62 @@
-from celery import Celery
-from celery.result import AsyncResult
+import os
+import redis
+from apscheduler.schedulers.background import BackgroundScheduler
+from filelock import FileLock
 
-# Initialize your Celery app
-app = Celery('your_app_name', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+# Redis connection setup
+r = redis.Redis(host='localhost', port=6379, db=0)
 
-# Function to get failed tasks from the backend
-def get_failed_tasks():
-    # This function should query your backend for tasks in FAILURE state.
-    # Here is a simplistic example assuming you're using Redis as the backend.
-    failed_tasks = []
+# Checkpoint key (used to resume from last read position)
+CHECKPOINT_KEY = "last_processed_key"
+PROM_FILE_PATH = "/path/to/metrics.prom"
+TEMP_FILE_PATH = "/path/to/metrics.prom.tmp"
+
+# Function to get data from Redis based on a search key
+def get_data_from_redis(search_key):
+    # Example: Use Redis SCAN to get keys that match the search criteria
+    cursor, keys = r.scan(match=f"{search_key}*", count=100)
+    data = []
+    for key in keys:
+        value = r.get(key)
+        if value:
+            data.append(value.decode('utf-8'))
+    return data, cursor
+
+# Function to write data to a temporary .prom file and then rename it atomically
+def write_to_prom_file(data):
+    with FileLock(f"{PROM_FILE_PATH}.lock"):  # Using filelock to avoid race conditions
+        with open(TEMP_FILE_PATH, 'w') as tmp_file:
+            for item in data:
+                tmp_file.write(f"{item}\n")
+        # Atomically rename the temporary file to the target .prom file
+        os.rename(TEMP_FILE_PATH, PROM_FILE_PATH)
+
+# Job to fetch data from Redis and write it to the .prom file
+def scheduled_job():
+    # Get the last processed key from Redis (or set it to 0 if it doesn't exist)
+    last_processed_key = r.get(CHECKPOINT_KEY)
+    if last_processed_key is None:
+        last_processed_key = "0"
     
-    # Example: assuming Redis stores task ids with a key pattern like 'celery-task-meta-*'
-    import redis
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    # Simulate searching for keys starting from last processed key
+    data, cursor = get_data_from_redis(last_processed_key)
     
-    for key in r.scan_iter("celery-task-meta-*"):
-        task_id = key.decode("utf-8").split('celery-task-meta-')[1]
-        task_result = AsyncResult(task_id)
-        
-        if task_result.state == 'FAILURE':
-            failed_tasks.append(task_result)
+    if data:
+        write_to_prom_file(data)
     
-    return failed_tasks
+    # Update the checkpoint to the current cursor for the next run
+    r.set(CHECKPOINT_KEY, cursor)
 
-# Function to retry failed tasks
-def retry_failed_tasks(failed_tasks):
-    for task_result in failed_tasks:
-        print(f"Retrying task {task_result.id}...")
-        # Use retry method if available, or reapply the task
-        task_result.retry(exc=None, throw=False)
+# Scheduler setup
+scheduler = BackgroundScheduler()
+scheduler.add_job(scheduled_job, 'interval', minutes=1)
 
-# Usage
-failed_tasks = get_failed_tasks()
-retry_failed_tasks(failed_tasks)
+# Start the scheduler
+scheduler.start()
+
+try:
+    # Keep the scheduler running
+    while True:
+        pass
+except (KeyboardInterrupt, SystemExit):
+    scheduler.shutdown()
