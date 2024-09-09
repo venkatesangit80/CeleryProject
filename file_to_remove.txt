@@ -60,3 +60,39 @@ try:
         pass
 except (KeyboardInterrupt, SystemExit):
     scheduler.shutdown()
+
+
+
+
+import os
+import glob
+
+# Directory where the files are stored
+TARGET_DIR = '/path/to/directory'
+
+def cleanup_old_files(directory, max_files=20, files_to_remove=10):
+    # Get a list of all files in the directory
+    files = glob.glob(os.path.join(directory, '*'))
+    
+    # If there are more than `max_files`, proceed to remove the oldest
+    if len(files) > max_files:
+        # Sort the files by modification time (oldest first)
+        files.sort(key=os.path.getmtime)
+        
+        # Select the oldest `files_to_remove`
+        files_to_delete = files[:files_to_remove]
+        
+        # Remove each selected file
+        for file_path in files_to_delete:
+            try:
+                os.remove(file_path)
+                print(f"Removed file: {file_path}")
+            except Exception as e:
+                print(f"Error removing file {file_path}: {e}")
+
+# Example usage within your scheduled job
+def scheduled_job():
+    # Your existing logic to write .prom files...
+    
+    # After writing a new file, check if we need to clean up old files
+    cleanup_old_files(TARGET_DIR)
