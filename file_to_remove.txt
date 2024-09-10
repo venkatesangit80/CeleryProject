@@ -14,16 +14,22 @@ def fetch_and_write_metrics(redis_client, search_pattern, output_file, lock_file
     :param lock_file: The lock file to ensure no other process can access the file while writing
     :param chunk_size: The number of keys to fetch at once in a Redis pipeline
     """
-    # Use Redis SCAN to fetch keys that match the search pattern
-    cursor, keys = redis_client.scan(match=search_pattern, count=chunk_size)
-    
     # Lock the file to ensure other processes can't read it while we write
     lock = FileLock(lock_file)
 
     with lock:  # Lock the file during this block
-        # Open the output file for writing
+        # Open the output file for writing (this happens only once)
         with open(output_file, 'w') as file:
-            while keys:
+            # Start the scan operation to fetch the keys in batches
+            cursor = 0  # Initial cursor set to 0
+
+            while cursor != 0 or cursor == 0:
+                # Fetch a batch of keys using the Redis scan
+                cursor, keys = redis_client.scan(cursor=cursor, match=search_pattern, count=chunk_size)
+
+                if not keys:
+                    break  # Exit the loop if no keys were found
+
                 # Fetch data from Redis using pipelining
                 pipeline = redis_client.pipeline()
                 for key in keys:
@@ -38,9 +44,6 @@ def fetch_and_write_metrics(redis_client, search_pattern, output_file, lock_file
                         file.write(f"Key: {key.decode('utf-8')}\n")
                         file.write(f"{value.decode('utf-8')}\n")
                         file.write("\n")  # Add newline for readability
-                
-                # Fetch the next batch of keys
-                cursor, keys = redis_client.scan(cursor=cursor, match=search_pattern, count=chunk_size)
 
     print(f"Finished writing metrics to {output_file}")
 
