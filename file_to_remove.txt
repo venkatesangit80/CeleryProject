@@ -1,98 +1,48 @@
-import os
 import redis
-from apscheduler.schedulers.background import BackgroundScheduler
 from filelock import FileLock
 
 # Redis connection setup
-r = redis.Redis(host='localhost', port=6379, db=0)
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
 
-# Checkpoint key (used to resume from last read position)
-CHECKPOINT_KEY = "last_processed_key"
-PROM_FILE_PATH = "/path/to/metrics.prom"
-TEMP_FILE_PATH = "/path/to/metrics.prom.tmp"
-
-# Function to get data from Redis based on a search key
-def get_data_from_redis(search_key):
-    # Example: Use Redis SCAN to get keys that match the search criteria
-    cursor, keys = r.scan(match=f"{search_key}*", count=100)
-    data = []
-    for key in keys:
-        value = r.get(key)
-        if value:
-            data.append(value.decode('utf-8'))
-    return data, cursor
-
-# Function to write data to a temporary .prom file and then rename it atomically
-def write_to_prom_file(data):
-    with FileLock(f"{PROM_FILE_PATH}.lock"):  # Using filelock to avoid race conditions
-        with open(TEMP_FILE_PATH, 'w') as tmp_file:
-            for item in data:
-                tmp_file.write(f"{item}\n")
-        # Atomically rename the temporary file to the target .prom file
-        os.rename(TEMP_FILE_PATH, PROM_FILE_PATH)
-
-# Job to fetch data from Redis and write it to the .prom file
-def scheduled_job():
-    # Get the last processed key from Redis (or set it to 0 if it doesn't exist)
-    last_processed_key = r.get(CHECKPOINT_KEY)
-    if last_processed_key is None:
-        last_processed_key = "0"
+def fetch_and_write_metrics(redis_client, search_pattern, output_file, lock_file, chunk_size=100):
+    """
+    Fetch metrics data from Redis using pipelining and write them to a locked file.
     
-    # Simulate searching for keys starting from last processed key
-    data, cursor = get_data_from_redis(last_processed_key)
+    :param redis_client: Redis client instance
+    :param search_pattern: The search pattern for Redis keys (e.g., "metrics:*")
+    :param output_file: The file path to write the fetched data
+    :param lock_file: The lock file to ensure no other process can access the file while writing
+    :param chunk_size: The number of keys to fetch at once in a Redis pipeline
+    """
+    # Use Redis SCAN to fetch keys that match the search pattern
+    cursor, keys = redis_client.scan(match=search_pattern, count=chunk_size)
     
-    if data:
-        write_to_prom_file(data)
-    
-    # Update the checkpoint to the current cursor for the next run
-    r.set(CHECKPOINT_KEY, cursor)
+    # Lock the file to ensure other processes can't read it while we write
+    lock = FileLock(lock_file)
 
-# Scheduler setup
-scheduler = BackgroundScheduler()
-scheduler.add_job(scheduled_job, 'interval', minutes=1)
+    with lock:  # Lock the file during this block
+        # Open the output file for writing
+        with open(output_file, 'w') as file:
+            while keys:
+                # Fetch data from Redis using pipelining
+                pipeline = redis_client.pipeline()
+                for key in keys:
+                    pipeline.get(key)
+                
+                # Execute the pipeline to get all the results in batch
+                results = pipeline.execute()
 
-# Start the scheduler
-scheduler.start()
+                # Write each key's data to the file
+                for key, value in zip(keys, results):
+                    if value:  # Ensure value is not None
+                        file.write(f"Key: {key.decode('utf-8')}\n")
+                        file.write(f"{value.decode('utf-8')}\n")
+                        file.write("\n")  # Add newline for readability
+                
+                # Fetch the next batch of keys
+                cursor, keys = redis_client.scan(cursor=cursor, match=search_pattern, count=chunk_size)
 
-try:
-    # Keep the scheduler running
-    while True:
-        pass
-except (KeyboardInterrupt, SystemExit):
-    scheduler.shutdown()
+    print(f"Finished writing metrics to {output_file}")
 
-
-
-
-import os
-import glob
-
-# Directory where the files are stored
-TARGET_DIR = '/path/to/directory'
-
-def cleanup_old_files(directory, max_files=20, files_to_remove=10):
-    # Get a list of all files in the directory
-    files = glob.glob(os.path.join(directory, '*'))
-    
-    # If there are more than `max_files`, proceed to remove the oldest
-    if len(files) > max_files:
-        # Sort the files by modification time (oldest first)
-        files.sort(key=os.path.getmtime)
-        
-        # Select the oldest `files_to_remove`
-        files_to_delete = files[:files_to_remove]
-        
-        # Remove each selected file
-        for file_path in files_to_delete:
-            try:
-                os.remove(file_path)
-                print(f"Removed file: {file_path}")
-            except Exception as e:
-                print(f"Error removing file {file_path}: {e}")
-
-# Example usage within your scheduled job
-def scheduled_job():
-    # Your existing logic to write .prom files...
-    
-    # After writing a new file, check if we need to clean up old files
-    cleanup_old_files(TARGET_DIR)
+# Example usage
+fetch_and_write_metrics(redis_client, "metrics:*", "/path/to/output_file.txt", "/path/to/output_file.lock", chunk_size=100)
