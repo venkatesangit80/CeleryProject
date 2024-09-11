@@ -1,51 +1,75 @@
 import redis
-from filelock import FileLock
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
-# Redis connection setup
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
+# Initialize Redis client
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-def fetch_and_write_metrics(redis_client, search_pattern, output_file, lock_file, chunk_size=100):
-    """
-    Fetch metrics data from Redis using pipelining and write them to a locked file.
+# Pattern for Redis keys (replace with your actual key pattern)
+pattern = 'metrics_*'
+
+# Function to fetch data using Redis pipeline and write it to a separate file
+def fetch_and_write_to_file(keys, file_name):
+    # Create a pipeline to fetch data in bulk
+    pipeline = r.pipeline()
+    for key in keys:
+        pipeline.get(key)
     
-    :param redis_client: Redis client instance
-    :param search_pattern: The search pattern for Redis keys (e.g., "metrics:*")
-    :param output_file: The file path to write the fetched data
-    :param lock_file: The lock file to ensure no other process can access the file while writing
-    :param chunk_size: The number of keys to fetch at once in a Redis pipeline
-    """
-    # Lock the file to ensure other processes can't read it while we write
-    lock = FileLock(lock_file)
+    # Execute the pipeline
+    values = pipeline.execute()
 
-    with lock:  # Lock the file during this block
-        # Open the output file for writing (this happens only once)
-        with open(output_file, 'w') as file:
-            # Start the scan operation to fetch the keys in batches
-            cursor = 0  # Initial cursor set to 0
+    # Write the fetched data to the file for this thread
+    with open(file_name, 'w') as f:
+        for value in values:
+            if value:
+                f.write(value.decode('utf-8') + '\n')  # Write to the file without a lock, since each thread has its own file
 
-            while cursor != 0 or cursor == 0:
-                # Fetch a batch of keys using the Redis scan
-                cursor, keys = redis_client.scan(cursor=cursor, match=search_pattern, count=chunk_size)
+# Function to scan Redis keys and distribute the work to multiple threads
+def process_keys_in_batches(base_file_name, batch_size=100):
+    cursor = 0
+    keys = []
+    thread_count = 0  # To give unique file names to each thread
 
-                if not keys:
-                    break  # Exit the loop if no keys were found
+    # Create a thread pool executor for parallel processing
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        while True:
+            cursor, new_keys = r.scan(cursor=cursor, match=pattern, count=batch_size)
+            keys.extend(new_keys)
 
-                # Fetch data from Redis using pipelining
-                pipeline = redis_client.pipeline()
-                for key in keys:
-                    pipeline.get(key)
-                
-                # Execute the pipeline to get all the results in batch
-                results = pipeline.execute()
+            # When the number of keys reaches the batch size, process them in parallel
+            if len(keys) >= batch_size:
+                # Each thread writes to its own file
+                thread_file_name = f"{base_file_name}_thread_{thread_count}.txt"
+                executor.submit(fetch_and_write_to_file, keys[:batch_size], thread_file_name)
 
-                # Write each key's data to the file
-                for key, value in zip(keys, results):
-                    if value:  # Ensure value is not None
-                        file.write(f"Key: {key.decode('utf-8')}\n")
-                        file.write(f"{value.decode('utf-8')}\n")
-                        file.write("\n")  # Add newline for readability
+                # Clear the processed keys and keep the unprocessed ones
+                keys = keys[batch_size:]
+                thread_count += 1
 
-    print(f"Finished writing metrics to {output_file}")
+            # If no more keys, break
+            if cursor == 0:
+                break
 
-# Example usage
-fetch_and_write_metrics(redis_client, "metrics:*", "/path/to/output_file.txt", "/path/to/output_file.lock", chunk_size=100)
+        # Process remaining keys that didn't fill the batch size
+        if keys:
+            thread_file_name = f"{base_file_name}_thread_{thread_count}.txt"
+            executor.submit(fetch_and_write_to_file, keys, thread_file_name)
+
+# Main function to start the processing
+if __name__ == '__main__':
+    base_file_name = 'vrops_metrics_data'
+    
+    # Start processing Redis keys and writing to separate files per thread
+    process_keys_in_batches(base_file_name, batch_size=100)
+
+
+import os
+
+# List of all the thread-specific files
+file_names = [f'vrops_metrics_data_thread_{i}.txt' for i in range(thread_count)]
+
+# Merge the files into one
+with open('merged_vrops_metrics_data.txt', 'w') as outfile:
+    for fname in file_names:
+        with open(fname) as infile:
+            outfile.write(infile.read())
