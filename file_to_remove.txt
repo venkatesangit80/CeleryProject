@@ -1,4 +1,4 @@
-You’re welcome! I’m glad the solution improved the performance significantly. To handle the requirement of listening to Redis and processing new keys in real-time without polling every minute, we can leverage Redis Pub/Sub (Publish/Subscribe) or Redis Keyspace Notifications.
+To handle the requirement of listening to Redis and processing new keys in real-time without polling every minute, we can leverage Redis Pub/Sub (Publish/Subscribe) or Redis Keyspace Notifications.
 
 These features allow you to listen for events such as new keys being added, modified, or deleted, and trigger processing automatically when a new key that matches a certain pattern is created. This way, you can avoid periodically checking (polling) Redis and instead react to real-time events.
 
