@@ -1,35 +1,12 @@
-from celery import Celery
-from celery.result import AsyncResult
+import _ from 'lodash';
 
-# Initialize your Celery app
-app = Celery('your_app_name', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+const array1 = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }];
+const array2 = [{ id: 1, location: 'City X' }, { id: 3, location: 'City Y' }];
 
-# Function to get failed tasks from the backend
-def get_failed_tasks():
-    # This function should query your backend for tasks in FAILURE state.
-    # Here is a simplistic example assuming you're using Redis as the backend.
-    failed_tasks = []
-    
-    # Example: assuming Redis stores task ids with a key pattern like 'celery-task-meta-*'
-    import redis
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
-    
-    for key in r.scan_iter("celery-task-meta-*"):
-        task_id = key.decode("utf-8").split('celery-task-meta-')[1]
-        task_result = AsyncResult(task_id)
-        
-        if task_result.state == 'FAILURE':
-            failed_tasks.append(task_result)
-    
-    return failed_tasks
+const result = _.values(_.mergeWith(
+  _.keyBy(array1, 'id'),
+  _.keyBy(array2, 'id'),
+  (objValue, srcValue) => _.isObject(objValue) ? _.merge(objValue, srcValue) : objValue
+));
 
-# Function to retry failed tasks
-def retry_failed_tasks(failed_tasks):
-    for task_result in failed_tasks:
-        print(f"Retrying task {task_result.id}...")
-        # Use retry method if available, or reapply the task
-        task_result.retry(exc=None, throw=False)
-
-# Usage
-failed_tasks = get_failed_tasks()
-retry_failed_tasks(failed_tasks)
+console.log(result);
