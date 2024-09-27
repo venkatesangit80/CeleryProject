@@ -97,6 +97,13 @@ def process_data_from_source_low_priority(self, script_code, function_name, *arg
 
 @app.task(bind=True, name='process_data_from_source_normal', max_retries=3, acks_late=True, rate_limit='20/m')
 def process_data_from_source_normal(self, script_code, function_name, *args, **kwargs):
+    """
+    This function is used to process the data from the source
+    script_code: str: The code of the script
+    function_name: str: The name of the function to execute
+    *args: list: The arguments to pass to the function
+    **kwargs: dict: The keyword arguments to pass to the function
+    """
     if can_execute():
         try:
             result = process_data(script_code, function_name, *args, **kwargs)
@@ -114,7 +121,7 @@ def process_data_from_source_normal(self, script_code, function_name, *args, **k
         finally:
             redis_client.decr(REDIS_COUNTER_KEY)
     else:
-        self.retry(countdown=10)
+        self.retry(countdown=10) # Retry after 10 seconds if rate limit exceeded
 
 @app.task(name='addition')
 def add(x, y):

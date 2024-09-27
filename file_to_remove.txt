@@ -1,0 +1,12 @@
+import _ from 'lodash';
+
+const array1 = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }];
+const array2 = [{ id: 1, location: 'City X' }, { id: 3, location: 'City Y' }];
+
+const result = _.values(_.mergeWith(
+  _.keyBy(array1, 'id'),
+  _.keyBy(array2, 'id'),
+  (objValue, srcValue) => _.isObject(objValue) ? _.merge(objValue, srcValue) : objValue
+));
+
+console.log(result);
