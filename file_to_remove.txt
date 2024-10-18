@@ -1,31 +1,14 @@
-const data = [
-    { group: 'A', count: 50 },
-    { group: 'B', count: 20 },
-    { group: 'C', count: 70 },
-    { group: 'D', count: 10 },
-    { group: 'E', count: 30 },
-    { group: 'F', count: 40 },
-    { group: 'G', count: 60 },
-    { group: 'H', count: 25 },
-    { group: 'I', count: 35 },
-    { group: 'J', count: 15 },
-    { group: 'K', count: 45 },
-    { group: 'L', count: 55 }
-];
-
-// Sort by count in descending order
-const sortedData = data.sort((a, b) => b.count - a.count);
-
-// Get the top 10 items
-const top10 = sortedData.slice(0, 10);
-
-// Sum the counts of the remaining items
-const othersCount = sortedData.slice(10).reduce((sum, item) => sum + item.count, 0);
-
-// Add "Others" to the result
-const result = [
-    ...top10,
-    { group: 'Others', count: othersCount }
-];
-
-console.log(result);
+SELECT 
+    app_name,
+    data_center,
+    environment,
+    CASE
+        WHEN MAX(CASE WHEN status = 'active' THEN 1 ELSE 0 END) = 1 THEN 'active'
+        ELSE 'passive'
+    END AS final_status
+FROM 
+    your_table
+GROUP BY 
+    app_name,
+    data_center,
+    environment;
