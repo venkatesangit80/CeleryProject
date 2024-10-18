@@ -1,14 +1,12 @@
-SELECT 
-    app_name,
-    data_center,
-    environment,
-    CASE
-        WHEN MAX(CASE WHEN status = 'active' THEN 1 ELSE 0 END) = 1 THEN 'active'
-        ELSE 'passive'
-    END AS final_status
-FROM 
-    your_table
-GROUP BY 
-    app_name,
-    data_center,
-    environment;
+import pandas as pd
+
+# Example DataFrame
+data = {'ac_count': [1, 2, 3, 2, 1],
+        'ac_value': ['passive', 'passive', 'active', 'passive', 'active']}
+
+df = pd.DataFrame(data)
+
+# Apply the condition
+df['ac_value'] = df.apply(lambda row: 'active' if row['ac_count'] == 2 else row['ac_value'], axis=1)
+
+print(df)
