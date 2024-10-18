@@ -1,12 +1,1 @@
-import pandas as pd
-
-# Example DataFrame
-data = {'ac_count': [1, 2, 3, 2, 1],
-        'ac_value': ['passive', 'passive', 'active', 'passive', 'active']}
-
-df = pd.DataFrame(data)
-
-# Apply the condition
-df['ac_value'] = df.apply(lambda row: 'active' if row['ac_count'] == 2 else row['ac_value'], axis=1)
-
-print(df)
+quantile(0.95, quantile_over_time(0.95, host:windows_cpu_utilization:rate5m_percent{agent_hostname=~"hostlist"}[15m]))
