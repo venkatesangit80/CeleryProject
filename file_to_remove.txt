@@ -52,3 +52,33 @@ file.close()
 tree.disconnect()
 session.disconnect()
 connection.disconnect()
+
+
+
+
+import smbclient
+import pandas as pd
+import io
+
+# Set default credentials
+smbclient.ClientConfig(username='your_username', password='your_password')
+
+# Define the SMB path
+smb_path = r'\\server\share\path\to\file.csv'
+
+# Sample DataFrame
+data = {
+    'Name': ['Alice', 'Bob', 'Charlie'],
+    'Age': [25, 30, 35],
+    'City': ['New York', 'Los Angeles', 'Chicago']
+}
+df = pd.DataFrame(data)
+
+# Convert DataFrame to CSV in memory
+csv_buffer = io.StringIO()
+df.to_csv(csv_buffer, index=False)
+csv_data = csv_buffer.getvalue().encode('utf-8')
+
+# Write CSV data to the SMB share
+with smbclient.open_file(smb_path, mode='wb') as file:
+    file.write(csv_data)
