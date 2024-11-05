@@ -1,31 +1,54 @@
 import pandas as pd
+import io
+import uuid
+from smbprotocol.connection import Connection
+from smbprotocol.session import Session
+from smbprotocol.tree import TreeConnect
+from smbprotocol.file import Open, CreateDisposition, FileAttributes, FileInformationClass
 
-# Sample DataFrame with history and current columns for CPU and Memory
+# Sample DataFrame
 data = {
-    'cpu_history': ["1|2|3|4|5|6|7|8|9", "", "50|51|52"],
-    'cpu_current': [10, 20, 30],
-    'mem_history': ["10|20|30", "", "60|70|80|90"],
-    'mem_current': [40, 50, 60]
+    'Name': ['Alice', 'Bob', 'Charlie'],
+    'Age': [25, 30, 35],
+    'City': ['New York', 'Los Angeles', 'Chicago']
 }
-
 df = pd.DataFrame(data)
 
-# Function to merge history with current and manage length of 90 values
-def merge_history_with_current(history, current):
-    if history:  # If history is not empty
-        merged = history + "|" + str(current)  # Append current value
-        values = merged.split("|")  # Split into list by "|"
-        
-        # Remove the first value if there are more than 90 values
-        if len(values) > 90:
-            values.pop(0)
-        
-        return "|".join(values)  # Join back into pipe-separated string
-    else:  # If history is empty, assign current as the value
-        return str(current)
+# Connection parameters
+server_name = "your_server_name"
+server_ip = "your_server_ip"
+username = "your_username"
+password = "your_password"
+share_name = "your_share_name"
+file_path = "path/to/your/file.csv"
 
-# Apply the function to each column pair
-df['cpu_history'] = df.apply(lambda x: merge_history_with_current(x['cpu_history'], x['cpu_current']), axis=1)
-df['mem_history'] = df.apply(lambda x: merge_history_with_current(x['mem_history'], x['mem_current']), axis=1)
+# Convert DataFrame to CSV in memory
+csv_buffer = io.StringIO()
+df.to_csv(csv_buffer, index=False)
+csv_data = csv_buffer.getvalue().encode('utf-8')
 
-df[['cpu_history', 'mem_history']]
+# Establish a connection
+connection = Connection(uuid.uuid4(), server_ip)
+connection.connect()
+
+# Create a session with NTLM authentication
+session = Session(connection, username, password)
+session.connect()
+
+# Connect to the share
+tree = TreeConnect(session, f"\\\\{server_name}\\{share_name}")
+tree.connect()
+
+# Open the file for writing
+file = Open(tree, file_path, access=0x0012019F, disposition=CreateDisposition.FILE_OVERWRITE_IF, file_attributes=FileAttributes.FILE_ATTRIBUTE_NORMAL)
+file.create()
+
+# Write data to the file
+file.write(csv_data, 0)
+file.set_information(FileInformationClass.FileEndOfFileInformation, {'EndOfFile': len(csv_data)})
+
+# Close the file and disconnect
+file.close()
+tree.disconnect()
+session.disconnect()
+connection.disconnect()
