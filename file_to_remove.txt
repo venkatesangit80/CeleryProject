@@ -1,24 +1,15 @@
----
-applications:
-  - name: your-main-app
-    memory: 512M
-    instances: 1
-    buildpacks:
-      - python_buildpack
-    path: path/to/your/main/app
-    command: python app.py
-    env:
-      # Environment variables for the main application
-      CELERY_BROKER_URL: redis://your-redis-service:6379/0
-      CELERY_RESULT_BACKEND: redis://your-redis-service:6379/0
+import pandas as pd
+import numpy as np
 
-  - name: your-flower-app
-    memory: 256M
-    instances: 1
-    buildpacks:
-      - python_buildpack
-    command: celery -A your_main_app flower --port=$PORT
-    env:
-      # Ensure the same environment variables are set for Flower
-      CELERY_BROKER_URL: redis://your-redis-service:6379/0
-      CELERY_RESULT_BACKEND: redis://your-redis-service:6379/0
+# Sample DataFrame
+data = {
+    'A': [np.nan, 2, np.nan, 4],
+    'B': [1, np.nan, 3, np.nan],
+    'C': [np.nan, np.nan, np.nan, 5]
+}
+df = pd.DataFrame(data)
+
+# Select the first non-null value from A, B, or C
+df['ColumnA'] = df[['A', 'B', 'C']].bfill(axis=1).iloc[:, 0]
+
+print(df)
