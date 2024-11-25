@@ -13,3 +13,34 @@ df = pd.DataFrame(data)
 df['ColumnA'] = df[['A', 'B', 'C']].bfill(axis=1).iloc[:, 0]
 
 print(df)
+
+
+
+import pandas as pd
+
+# Sample DataFrame
+data = {
+    'app': ['app1', 'app1', 'app1', 'app2', 'app2', 'app2', 'app3', 'app3', 'app3'],
+    'env': ['dev', 'test', 'prod', 'dev', 'test', 'prod', 'dev', 'test', 'prod'],
+    'host': [10, 15, 20, 5, 10, 15, 12, 18, 24],
+    'TAS': [5, 7, 9, 2, 4, 6, 6, 8, 10],
+    'network': [3, 4, 5, 1, 2, 3, 2, 3, 4],
+    'DB': [8, 10, 12, 4, 5, 6, 7, 9, 11]
+}
+
+df = pd.DataFrame(data)
+
+# Group by 'app' and sum values for all resources
+all_env = df.groupby('app').sum(numeric_only=True).reset_index()
+all_env['env'] = 'all'  # Add 'all' as the environment
+
+# Concatenate the original DataFrame with the aggregated 'all' environment
+result = pd.concat([df, all_env], ignore_index=True)
+
+# Reorder the DataFrame
+result = result[['app', 'env', 'host', 'TAS', 'network', 'DB']]
+
+# Sort the DataFrame for better readability
+result = result.sort_values(by=['app', 'env']).reset_index(drop=True)
+
+print(result)
