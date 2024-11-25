@@ -44,3 +44,10 @@ result = result[['app', 'env', 'host', 'TAS', 'network', 'DB']]
 result = result.sort_values(by=['app', 'env']).reset_index(drop=True)
 
 print(result)
+
+SELECT 
+    SUBSTR(column_name, 1, INSTR(column_name, '-', -1) - 1) AS extracted_value
+FROM 
+    table_name
+WHERE 
+    INSTR(column_name, '-') > 0;
