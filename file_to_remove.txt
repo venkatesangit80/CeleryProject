@@ -51,3 +51,32 @@ FROM
     table_name
 WHERE 
     INSTR(column_name, '-') > 0;
+
+
+
+
+
+MERGE INTO target_table t
+USING source_table s
+ON (t.id = s.id)
+WHEN MATCHED THEN
+    UPDATE SET 
+        t.value = s.value,        -- Update existing data
+        t.is_active = 'Y',        -- Ensure record is active
+        t.deleted_at = NULL       -- Clear soft delete if reactivated
+WHEN NOT MATCHED THEN
+    INSERT (id, value, is_active, deleted_at)
+    VALUES (s.id, s.value, 'Y', NULL)
+WHEN NOT MATCHED BY SOURCE THEN
+    UPDATE SET 
+        t.is_active = 'N',        -- Mark as soft deleted
+        t.deleted_at = SYSDATE    -- Record the soft delete timestamp
+    WHERE t.is_active = 'Y';      -- Only soft delete active records
+
+
+
+DELETE FROM target_table
+WHERE is_active = 'N'
+  AND deleted_at <= SYSDATE - 5; -- Deletes records older than 5 days
+
+
