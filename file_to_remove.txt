@@ -128,3 +128,32 @@ WHEN NOT MATCHED BY SOURCE THEN
     UPDATE SET
         p.is_active = 'N',
         p.deleted_at = SYSTIMESTAMP;
+
+
+BEGIN
+    -- Merge operation for inserts and updates
+    MERGE INTO platform p
+    USING platform_staging ps
+    ON (p.unique_id = ps.unique_id)
+    WHEN MATCHED THEN
+        UPDATE SET
+            p.lob = ps.lob,
+            p.appid = ps.appid,
+            p.environment = ps.environment,
+            p.platform_data = ps.platform_data,
+            p.is_active = 'Y',
+            p.deleted_at = NULL
+    WHEN NOT MATCHED THEN
+        INSERT (unique_id, lob, appid, environment, platform_data, is_active, deleted_at)
+        VALUES (ps.unique_id, ps.lob, ps.appid, ps.environment, ps.platform_data, 'Y', NULL);
+
+    -- Update operation for soft deletion
+    UPDATE platform p
+    SET p.is_active = 'N',
+        p.deleted_at = SYSTIMESTAMP
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM platform_staging ps
+        WHERE ps.unique_id = p.unique_id
+    );
+END;
