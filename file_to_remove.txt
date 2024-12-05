@@ -80,3 +80,31 @@ WHERE is_active = 'N'
   AND deleted_at <= SYSDATE - 5; -- Deletes records older than 5 days
 
 
+
+import pandas as pd
+import numpy as np
+
+# Sample DataFrame
+data = {
+    'environment': ['Prod', 'DR', 'Test', 'Prod'],
+    'host_count': [10, 0, 5, 0],
+    'tas_count': [0, 0, 0, 5],
+    'tkgi_count': [0, 0, 0, 0],
+    'cloud_service_type': ['NO SERVICE', 'NO SERVICE', 'NO SERVICE', 'NO SERVICE']
+}
+df = pd.DataFrame(data)
+
+# Define the conditions
+conditions = [
+    (df['environment'].isin(['Prod', 'DR'])) & (df['cloud_service_type'] == 'NO SERVICE') & (df['host_count'] > 0) & (df['tas_count'] == 0) & (df['tkgi_count'] == 0),
+    (df['environment'].isin(['Prod', 'DR'])) & (df['cloud_service_type'] == 'NO SERVICE') & (df['host_count'] == 0) & ((df['tas_count'] > 0) | (df['tkgi_count'] > 0)),
+    (df['environment'].isin(['Prod', 'DR'])) & (df['cloud_service_type'] == 'NO SERVICE') & (df['host_count'] > 0) & ((df['tas_count'] > 0) | (df['tkgi_count'] > 0))
+]
+
+# Define the corresponding outputs
+outputs = ['VM/PM', 'PAAS', 'HYBRID']
+
+# Apply the conditions and assign the new values
+df['cloud_service_type'] = np.select(conditions, outputs, default=df['cloud_service_type'])
+
+print(df)
