@@ -249,5 +249,11 @@ Tips:
 	•	Include visuals like charts, diagrams, and process flows for clarity.
 	•	Highlight outcomes and value added to the organization for each initiative.
 	•	Keep the language concise and focus on key achievements.
-
+.
 Let me know if you need help refining the content or designing the slides!
+
+
+
+npm install react-redux@9.1.2
+
+https://github.com/rt2zz/redux-persist/issues/1462
