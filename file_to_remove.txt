@@ -257,3 +257,96 @@ Let me know if you need help refining the content or designing the slides!
 npm install react-redux@9.1.2
 
 https://github.com/rt2zz/redux-persist/issues/1462
+
+
+import json
+import csv
+
+OLD_FILE = 'old-deps.json'
+NEW_FILE = 'new-deps.json'
+OUTPUT_CSV = 'dependency-diff.csv'
+
+def gather_dependencies(node, path=None):
+    """
+    Recursively gather dependencies from an npm ls --json object.
+    Returns a dictionary mapping 'pathString' -> {name, version}.
+    """
+    if path is None:
+        path = []
+
+    dep_map = {}
+    name = node.get('name', 'root')
+    version = node.get('version', 'unknown')
+    # If you'd like to include the root project itself, uncomment:
+    # dep_map[' > '.join(path + [name])] = {'name': name, 'version': version}
+
+    dependencies = node.get('dependencies', {})
+    for dep_name, dep_obj in dependencies.items():
+        dep_version = dep_obj.get('version', '')
+        full_path = path + [name, dep_name]
+        path_str = ' > '.join(full_path)
+        dep_map[path_str] = {'name': dep_name, 'version': dep_version}
+        # Recurse into the dependency's dependencies
+        dep_map.update(gather_dependencies(dep_obj, path + [name, dep_name]))
+
+    return dep_map
+
+def main():
+    with open(OLD_FILE, 'r') as f:
+        old_data = json.load(f)
+    with open(NEW_FILE, 'r') as f:
+        new_data = json.load(f)
+
+    old_map = gather_dependencies(old_data)
+    new_map = gather_dependencies(new_data)
+
+    differences = []
+
+    # Check for removed or changed dependencies
+    for dep_path, old_info in old_map.items():
+        if dep_path not in new_map:
+            # Removed
+            differences.append({
+                'type': 'removed',
+                'path': dep_path,
+                'oldVersion': old_info['version'],
+                'newVersion': ''
+            })
+        else:
+            # Check for version change
+            new_version = new_map[dep_path]['version']
+            if new_version != old_info['version']:
+                differences.append({
+                    'type': 'changed',
+                    'path': dep_path,
+                    'oldVersion': old_info['version'],
+                    'newVersion': new_version
+                })
+
+    # Check for added dependencies
+    for dep_path, new_info in new_map.items():
+        if dep_path not in old_map:
+            # Added
+            differences.append({
+                'type': 'added',
+                'path': dep_path,
+                'oldVersion': '',
+                'newVersion': new_info['version']
+            })
+
+    # Write differences to CSV
+    with open(OUTPUT_CSV, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['type', 'path', 'oldVersion', 'newVersion'])
+        for diff in differences:
+            writer.writerow([
+                diff['type'],
+                diff['path'],
+                diff['oldVersion'],
+                diff['newVersion']
+            ])
+
+    print(f"Differences written to {OUTPUT_CSV}")
+
+if __name__ == "__main__":
+    main()
