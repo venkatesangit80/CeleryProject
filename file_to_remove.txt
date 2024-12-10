@@ -350,3 +350,39 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+import json
+
+INPUT_FILE = 'deps.json'
+
+def main():
+    with open(INPUT_FILE, 'r') as f:
+        data = json.load(f)
+
+    # The top-level dependencies are directly under data["dependencies"] if they exist
+    top_level_deps = data.get("dependencies", {})
+
+    # Construct a dictionary of dependency: version pairs
+    # In npm ls output, each dependency object should have a "version"
+    deps_dict = {}
+    for dep_name, dep_info in top_level_deps.items():
+        version = dep_info.get("version", "")
+        if version:
+            deps_dict[dep_name] = version
+        else:
+            # If no version found, fallback or skip
+            # Sometimes a peer dependency or unresolved dependency might not have a version
+            continue
+
+    # Create a snippet that can be part of package.json
+    package_section = {
+        "dependencies": deps_dict
+    }
+
+    # Print in pretty JSON format
+    print(json.dumps(package_section, indent=2))
+
+if __name__ == "__main__":
+    main()
