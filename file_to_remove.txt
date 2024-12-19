@@ -386,3 +386,22 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Generate a date range for 365 days starting from today
+start_date = datetime.today()
+date_range = [start_date + timedelta(days=i) for i in range(365)]
+
+# Create a dataframe with 'datetime' and 'p95' columns
+data = {
+    "datetime": [date.strftime('%Y-%m-%d') for date in date_range],
+    "p95": [10] * 365
+}
+
+df = pd.DataFrame(data)
+
+# Display the dataframe to the user
+import ace_tools as tools; tools.display_dataframe_to_user(name="Generated DataFrame with DateTime and p95 Values", dataframe=df)
