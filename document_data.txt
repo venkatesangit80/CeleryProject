@@ -1,0 +1,120 @@
+Below is a sample Confluence template you can copy and paste into a new page. Replace the placeholder text ([Your text here]) with your own information. You can also rearrange or remove sections to suit your team’s needs.
+
+Page Title
+
+Where Is My Workload? – Business Logic for Capacity Planning Platform
+
+1. Overview and Objective
+	1.	Purpose:
+[Describe why this document exists. For example: “To provide a detailed overview of the business logic for identifying where a workload resides within our Capacity Planning Platform.”]
+	2.	Scope:
+[Specify the boundaries. For example: “Covers data ingestion, business logic, and user interface considerations for identifying workload location, but does not address cost modeling.”]
+
+2. Background and Context
+	1.	Business Context:
+[Explain what problem this functionality solves. For instance: “Teams need a unified view of which environment (on-prem/cloud) their workloads are deployed to, to make informed capacity decisions.”]
+	2.	Target Audience:
+[List roles such as finance, engineering, resource management, etc.]
+	3.	Key Definitions/Glossary:
+	•	Workload: [Definition here]
+	•	Cluster: [Definition here]
+	•	Capacity: [Definition here]
+	•	(Add more as needed)
+
+3. High-Level Architecture
+	1.	System Diagram:
+[Insert or link a diagram showing how the “Where Is My Workload?” feature connects with the rest of the Capacity Planning Platform.]
+	2.	Technology Stack:
+	•	Front-end: [e.g., React, Angular]
+	•	Back-end: [e.g., Node.js, Java services]
+	•	Databases: [e.g., PostgreSQL, MongoDB]
+	•	Integration Tools: [e.g., REST APIs, message queues]
+
+4. Functional Business Logic
+	1.	Key Use Cases / User Scenarios:
+	•	Use Case 1: [e.g., “User searches for workload by ID to see if it’s on-prem or cloud.”]
+	•	Use Case 2: [e.g., “Capacity manager views overall resource consumption for a particular workload.”]
+	•	Use Case 3: [Add more scenarios as needed]
+	2.	Core Business Rules:
+	•	Data Validation Rules: [e.g., “A workload must always have a valid environment ID.”]
+	•	Visibility Rules: [e.g., “Only users in the same department can view certain workloads.”]
+	•	Aggregation Logic: [e.g., “Data is summarized weekly for forecasting.”]
+	3.	Logic Flow Diagram:
+[Add a flowchart or sequence diagram illustrating how data moves when a user searches for workload location.]
+
+5. Data Model and Entities
+	1.	Entity Definitions:
+	•	Workload Entity: [List fields such as workload ID, environment, cluster name, etc.]
+	•	Capacity Entity: [List fields such as resource type, allocated capacity, used capacity.]
+	•	Cost Entity (If applicable): [List fields if cost modeling is part of the logic.]
+	2.	Relationships:
+[Explain how entities relate: e.g., “One workload can map to multiple capacity entries over time.”]
+	3.	Data Flow:
+[Outline where the data comes from (source), how it’s transformed, and where it’s stored (final DB, warehouse, etc.).]
+
+6. Technical Design Details
+	1.	APIs and Microservices:
+	•	[List relevant API endpoints for retrieving “Where Is My Workload?” information (e.g., GET /workloads/{id}).]
+	2.	Data Processing Pipelines:
+	•	[Describe any batch or real-time processes that update workload location data or capacity metrics.]
+	3.	Performance Considerations:
+	•	[Expected data volumes, concurrency, response time goals, caching strategies, etc.]
+
+7. User Interface / UX
+	1.	UI Wireframes or Mockups:
+[Insert images or links to your design prototypes showing how users will find “Where Is My Workload?”]
+	2.	Interaction Flows:
+	•	[Detail user actions step-by-step, e.g., “User logs in, navigates to Workloads tab, enters search criteria, results appear.”]
+
+8. Security and Access Control
+	1.	Authorization and Roles:
+	•	[Identify which roles can see workload locations. Mention role-based access controls, if any.]
+	2.	Data Governance:
+	•	[Mention if PII is involved, or any compliance requirements (GDPR, HIPAA, etc.).]
+	•	[State how data is encrypted at rest and in transit.]
+
+9. Deployment and Release Strategy
+	1.	Environments:
+	•	[List Dev, Test, Staging, Production, and how code moves between them.]
+	2.	Deployment Pipeline (CI/CD):
+	•	[Describe steps from code commit to production deploy, including tests and approvals.]
+	3.	Versioning:
+	•	[Explain how changes to this functionality are tracked, e.g., Git branching strategy, release notes, etc.]
+
+10. Testing and Validation
+	1.	Testing Approach:
+	•	[Unit tests, integration tests, end-to-end tests, acceptance tests, etc.]
+	2.	Test Scenarios:
+	•	[Examples: “Retrieve workload that doesn’t exist,” “User not authorized,” “Data incomplete.”]
+	3.	Quality Metrics:
+	•	[Benchmarks for performance, accuracy, availability, etc.]
+
+11. Monitoring and Alerting
+	1.	Logging:
+	•	[What logs are captured for “Where Is My Workload?” queries—request ID, timestamps, etc.]
+	2.	Metrics:
+	•	[KPIs such as average response time, total queries, error rate over time.]
+	3.	Alerts & Incident Response:
+	•	[Thresholds for alerting. Outline on-call rotation and escalation procedures.]
+
+12. Future Enhancements and Roadmap
+	1.	Planned Improvements:
+	•	[List next steps, such as “Add automated scaling suggestions” or “Incorporate cost optimization data.”]
+	2.	Open Questions:
+	•	[Document any unresolved items or pending decisions about data ownership, new compliance needs, etc.]
+
+13. Appendices / References
+	1.	Related Documentation:
+	•	[Provide links to architecture diagrams, cost modeling pages, user guides, etc.]
+	2.	Glossary:
+	•	[Repeat or expand on the definitions from earlier if needed.]
+	3.	Change Log:
+	•	[Track major revisions to this Confluence document—date, author, summary of changes.]
+
+How to Use This Template
+	1.	Copy/Paste this entire template into your Confluence page.
+	2.	Replace the placeholder text ([Your text here]) with your specific information.
+	3.	Add or remove headings/sections as necessary.
+	4.	Insert diagrams, code snippets, and links to other Confluence pages as needed.
+
+Feel free to tailor this structure so it best fits your team’s workflow, compliance requirements, and documentation style.
