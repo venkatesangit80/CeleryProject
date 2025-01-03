@@ -1,0 +1,50 @@
+Scope of the “Where My Workload Is” Feature
+
+The “Where My Workload Is” feature aims to provide detailed visibility into the activity and operational state of workloads across the infrastructure. The scope includes the following functionalities and boundaries:
+
+1. Data Collection
+	•	Collect CPU utilization metrics from:
+	•	Virtual Machines (VMs).
+	•	Physical Machines (PMs).
+	•	Determine the active or passive state of individual servers based on predefined thresholds of CPU utilization.
+
+2. Data Aggregation
+	•	Aggregate server-level activity data to provide a data center-level status:
+	•	Active Data Center: All or a significant portion of servers are active.
+	•	Passive Data Center: Majority of servers are passive or underutilized.
+
+3. Real-Time Monitoring
+	•	Provide real-time or near real-time visibility into:
+	•	Which servers are active or passive.
+	•	The active/passive status of data centers.
+
+4. User Interface
+	•	Display the data in a user-friendly dashboard:
+	•	Visual representation of active/passive workloads at server and data center levels.
+	•	Filtering options to view specific data centers or servers.
+
+5. Reporting and Insights
+	•	Generate reports on:
+	•	Utilization trends over time.
+	•	Resource usage at server and data center levels.
+	•	Insights into potential resource optimization opportunities.
+
+6. Integration with Existing Systems
+	•	Integrate seamlessly with:
+	•	Monitoring tools (e.g., Prometheus, Grafana).
+	•	Infrastructure management platforms (e.g., VMware vSphere, OpenStack).
+
+7. Limitations and Assumptions
+	•	Assumptions:
+	•	CPU utilization is the primary metric for determining activity.
+	•	Thresholds for active/passive states are predefined and configurable.
+	•	Limitations:
+	•	Does not consider other performance metrics (e.g., memory, disk I/O) for activity determination.
+	•	Dependent on the accuracy and availability of underlying monitoring data.
+
+Out of Scope
+	•	Managing or modifying workloads directly (e.g., starting/stopping servers).
+	•	Comprehensive performance analysis beyond CPU utilization.
+	•	Predictive analytics or AI-driven optimization (could be a future enhancement).
+
+The scope ensures that the feature remains focused on providing actionable insights into workload activity while laying the groundwork for future expansions such as multi-metric analysis and predictive capabilities.
