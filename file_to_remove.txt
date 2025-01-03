@@ -405,3 +405,21 @@ df = pd.DataFrame(data)
 
 # Display the dataframe to the user
 import ace_tools as tools; tools.display_dataframe_to_user(name="Generated DataFrame with DateTime and p95 Values", dataframe=df)
+
+
+
+Purpose of the “Where My Workload Is” Feature
+
+The purpose of this feature is to provide a comprehensive overview of workload activity at various levels, from individual servers to the data center as a whole. By leveraging CPU utilization data, this feature determines the active or passive state of each Virtual Machine (VM) or Physical Machine (PM). It then aggregates this information to assess the overall activity status of data centers.
+
+This enables users to:
+	1.	Monitor Workload Distribution:
+	•	Identify where workloads are actively running within the infrastructure.
+	2.	Assess Resource Utilization:
+	•	Understand server-level and data center-level activity based on CPU performance.
+	3.	Improve Decision-Making:
+	•	Make informed decisions about resource allocation, scaling, and failover management.
+	4.	Enhance Operational Efficiency:
+	•	Quickly identify passive resources and optimize them for better utilization.
+
+In summary, the “Where My Workload Is” feature serves as a critical tool for understanding and managing the operational state of workloads across the infrastructure, ensuring better performance and resource planning.
