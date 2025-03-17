@@ -1,0 +1,25 @@
+import pandas as pd
+
+# Sample DataFrame
+data = {
+    'Column1': ['passive', 'active', 'passive', 'active'],
+    'Column2': ['passive', 'passive', 'active', 'active'],
+    'Column3': ['passive', 'passive', 'passive', 'active']
+}
+
+df = pd.DataFrame(data)
+
+# Function to determine status
+def determine_status(row, columns):
+    if all(row[col] == 'passive' for col in columns):
+        return 'passive'
+    else:
+        return 'active'
+
+# List of columns to check
+columns_to_check = ['Column1', 'Column2', 'Column3']
+
+# Apply the function to each row
+df['Status'] = df.apply(determine_status, axis=1, columns=columns_to_check)
+
+print(df)
