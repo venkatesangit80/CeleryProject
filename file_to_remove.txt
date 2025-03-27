@@ -1,40 +1,18 @@
-import requests
-import json
-import time
+GET /suite-api/api/adapterkinds/VMWARE/resourcekinds/VirtualMachine/statkeys
 
-# Configuration
-resource_ids = ["resourceId1", "resourceId2"]  # Replace with actual resource IDs
-stat_keys = ["cpu|usage_average", "mem|usage_average"]  # Replace with required stat keys
-start_time = int(time.mktime(time.strptime("2025-03-20 00:00:00", "%Y-%m-%d %H:%M:%S")) * 1000)
-end_time = int(time.mktime(time.strptime("2025-03-20 23:59:59", "%Y-%m-%d %H:%M:%S")) * 1000)
 
-vrops_url = "https://<vrops-hostname>/suite-api/api/resources/stats/query"  # Replace with your vROps host
-headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-    "Authorization": "Basic <base64-encoded-username-password>"  # Replace or use Bearer <token>
-}
-
-# API payload
 payload = {
-    "resourceId": resource_ids,
-    "statKey": stat_keys,
-    "rollUpType": "AVG",
-    "intervalType": "MINUTES",
-    "intervalQuantifier": 5,
+    "resourceId": ["resourceId1", "resourceId2"],
+    "statKey": [
+        "cpu|usage_average",
+        "mem|usage_average",
+        "system|powered_on",
+        "cpu|provisioned_vcpus",
+        "memory|total_capacity"
+    ],
+    "rollUpType": "NONE",                    # Important for raw data
+    "intervalType": "HOURS",                 # Or "MINUTES" if applicable
+    "intervalQuantifier": 1,
     "begin": start_time,
     "end": end_time
 }
-
-# API call
-def fetch_vrops_metrics():
-    try:
-        response = requests.post(vrops_url, headers=headers, data=json.dumps(payload), verify=False)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        return {"error": str(e)}
-
-# Example usage
-# result = fetch_vrops_metrics()
-# print(json.dumps(result, indent=2))
