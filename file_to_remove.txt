@@ -1,25 +1,61 @@
-import pandas as pd
+# dagster_pipeline.py
 
-# Sample DataFrame
-data = {
-    'Column1': ['passive', 'active', 'passive', 'active'],
-    'Column2': ['passive', 'passive', 'active', 'active'],
-    'Column3': ['passive', 'passive', 'passive', 'active']
-}
+from dagster import job, op, DynamicOut, DynamicOutput, get_dagster_logger
+from datetime import datetime
+from script_reader import read_script
+from hashicorp_poc import get_config_details
+import redis
 
-df = pd.DataFrame(data)
+# Setup Redis and config
+def get_redis_client():
+    config_details = get_config_details()
+    return redis.Redis(host=config_details['host'], port=config_details['port'], password=config_details['password'], db=0), config_details
 
-# Function to determine status
-def determine_status(row, columns):
-    if all(row[col] == 'passive' for col in columns):
-        return 'passive'
-    else:
-        return 'active'
+MAX_REQUESTS_PER_MINUTE = 100
+REDIS_COUNTER_KEY = 'current_limit'
+REDIS_TIMESTAMP_KEY = 'current_limit_timestamp'
 
-# List of columns to check
-columns_to_check = ['Column1', 'Column2', 'Column3']
+def can_execute(redis_client):
+    import time
+    current_time = int(time.time())
+    current_minute = current_time // 60
+    last_reset_minute = int(redis_client.get(REDIS_TIMESTAMP_KEY) or 0)
 
-# Apply the function to each row
-df['Status'] = df.apply(determine_status, axis=1, columns=columns_to_check)
+    if current_minute > last_reset_minute:
+        redis_client.set(REDIS_COUNTER_KEY, 0)
+        redis_client.set(REDIS_TIMESTAMP_KEY, current_minute)
 
-print(df)
+    current_limit = int(redis_client.get(REDIS_COUNTER_KEY) or 0)
+    if current_limit < MAX_REQUESTS_PER_MINUTE:
+        redis_client.incr(REDIS_COUNTER_KEY)
+        return True
+    return False
+
+@op
+def read_weather_script() -> str:
+    return read_script("weatherretreiver.py")
+
+@op
+def process_data(script_code: str, function_name: str, location: str) -> str:
+    redis_client, config_details = get_redis_client()
+    logger = get_dagster_logger()
+
+    if not can_execute(redis_client):
+        raise Exception("Rate limit exceeded. Try again later.")
+
+    local_dict = {}
+    exec(script_code, globals(), local_dict)
+    func = local_dict.get(function_name)
+    if func is None:
+        raise ValueError(f"Function {function_name} not found in script")
+
+    result = func(location, config_details=config_details)
+    redis_key = f"{function_name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    redis_client.set(redis_key, result)
+    redis_client.expire(redis_key, 3600)
+    logger.info(f"Result for {function_name} is {result}")
+    return result
+
+@job
+def weather_data_job():
+    process_data(read_weather_script(), "get_weather", "Bangalore")
