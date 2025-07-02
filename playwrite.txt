@@ -1,0 +1,81 @@
+# test_dagit_ui.py
+import pytest
+from playwright.sync_api import sync_playwright
+
+def test_dagit_home_loads():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto("http://localhost:3000")  # your Dagit UI
+
+        # Validate Dagit loads and job list is visible
+        assert page.locator("text=Launchpad").is_visible()
+        assert page.locator("text=Jobs").is_visible()
+
+        # Optionally check for a specific job name
+        assert page.locator("text=my_etl_job").is_visible()
+
+        browser.close()
+
+
+pipeline {
+    agent any
+
+    environment {
+        PYTHON_ENV = "venv"
+        DAGIT_PORT = "3000"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/your-repo/dagster-etl.git'
+            }
+        }
+
+        stage('Install Python Dependencies') {
+            steps {
+                sh 'python -m venv $PYTHON_ENV'
+                sh '. $PYTHON_ENV/bin/activate && pip install -r requirements.txt'
+            }
+        }
+
+        stage('Start Dagster (Dagit)') {
+            steps {
+                sh '''
+                . $PYTHON_ENV/bin/activate
+                nohup dagit -f etl_pipeline.py --port=$DAGIT_PORT > dagit.log 2>&1 &
+                sleep 10
+                '''
+            }
+        }
+
+        stage('Run Playwright Tests') {
+            steps {
+                sh '''
+                . $PYTHON_ENV/bin/activate
+                pytest test_dagit_ui.py
+                '''
+            }
+        }
+
+        stage('Stop Dagit') {
+            steps {
+                sh "pkill -f dagit || true"
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'dagit.log', allowEmptyArchive: true
+            junit 'test-results/*.xml' // if you export Pytest results
+        }
+    }
+}
+
+
+
+pip install playwright
+playwright install
+
